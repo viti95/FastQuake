@@ -48,7 +48,6 @@ static qboolean	startwindowed = 0, windowed_mode_set;
 static int		firstupdate = 1;
 static qboolean	vid_initialized = false, vid_palettized;
 static int		lockcount;
-static int		vid_fulldib_on_focus_mode;
 static qboolean	force_minimized, in_mode_set, is_mode0x13, force_mode_set;
 static int		vid_stretched, windowed_mouse;
 static qboolean	palette_changed, syscolchg, vid_mode_set, hide_window, pal_is_nostatic;
@@ -704,297 +703,6 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 
 /*
 =================
-VID_InitFullDIB
-=================
-*/
-void VID_InitFullDIB (HINSTANCE hInstance)
-{
-	DEVMODE	devmode;
-	int		i, j, modenum, cmodes, existingmode, originalnummodes, lowestres;
-	int		numlowresmodes, bpp, done;
-	int		cstretch, istretch, mstretch;
-	BOOL	stat;
-
-// enumerate 8 bpp modes
-	originalnummodes = nummodes;
-	modenum = 0;
-	lowestres = 99999;
-
-	do
-	{
-		stat = EnumDisplaySettings (NULL, modenum, &devmode);
-
-		if ((devmode.dmBitsPerPel == 8) &&
-			(devmode.dmPelsWidth <= MAXWIDTH) &&
-			(devmode.dmPelsHeight <= MAXHEIGHT) &&
-			(nummodes < MAX_MODE_LIST))
-		{
-			devmode.dmFields = DM_BITSPERPEL |
-							   DM_PELSWIDTH |
-							   DM_PELSHEIGHT;
-
-			if (ChangeDisplaySettings (&devmode, CDS_TEST | CDS_FULLSCREEN) ==
-					DISP_CHANGE_SUCCESSFUL)
-			{
-				modelist[nummodes].type = MS_FULLDIB;
-				modelist[nummodes].width = devmode.dmPelsWidth;
-				modelist[nummodes].height = devmode.dmPelsHeight;
-				modelist[nummodes].modenum = 0;
-				modelist[nummodes].mode13 = 0;
-				modelist[nummodes].stretched = 0;
-				modelist[nummodes].halfscreen = 0;
-				modelist[nummodes].dib = 1;
-				modelist[nummodes].fullscreen = 1;
-				modelist[nummodes].bpp = devmode.dmBitsPerPel;
-				sprintf (modelist[nummodes].modedesc, "%dx%d",
-						 devmode.dmPelsWidth, devmode.dmPelsHeight);
-
-			// if the width is more than twice the height, reduce it by half because this
-			// is probably a dual-screen monitor
-				if (!COM_CheckParm("-noadjustaspect"))
-				{
-					if (modelist[nummodes].width > (modelist[nummodes].height << 1))
-					{
-						modelist[nummodes].width >>= 1;
-						modelist[nummodes].halfscreen = 1;
-						sprintf (modelist[nummodes].modedesc, "%dx%d",
-								 modelist[nummodes].width,
-								 modelist[nummodes].height);
-					}
-				}
-
-				for (i=originalnummodes, existingmode = 0 ; i<nummodes ; i++)
-				{
-					if ((modelist[nummodes].width == modelist[i].width) &&
-						(modelist[nummodes].height == modelist[i].height))
-					{
-						existingmode = 1;
-						break;
-					}
-				}
-
-				if (!existingmode)
-				{
-					if (modelist[nummodes].width < lowestres)
-						lowestres = modelist[nummodes].width;
-
-					nummodes++;
-				}
-			}
-		}
-
-		modenum++;
-	} while (stat);
-
-// see if any of them were actually settable; if so, this is our mode list,
-// else enumerate all modes; our mode list is whichever ones are settable
-// with > 8 bpp
-	if (nummodes == originalnummodes)
-	{
-		modenum = 0;
-		lowestres = 99999;
-
-		Con_SafePrintf ("No 8-bpp fullscreen DIB modes found\n");
-
-		do
-		{
-			stat = EnumDisplaySettings (NULL, modenum, &devmode);
-
-			if ((((devmode.dmPelsWidth <= MAXWIDTH) &&
-				  (devmode.dmPelsHeight <= MAXHEIGHT)) ||
-				 (!COM_CheckParm("-noadjustaspect") &&
-				  (devmode.dmPelsWidth <= (MAXWIDTH*2)) &&
-				  (devmode.dmPelsWidth > (devmode.dmPelsHeight*2)))) &&
-				(nummodes < MAX_MODE_LIST) &&
-				(devmode.dmBitsPerPel > 8))
-			{
-				devmode.dmFields = DM_BITSPERPEL |
-								   DM_PELSWIDTH |
-								   DM_PELSHEIGHT;
-
-				if (ChangeDisplaySettings (&devmode, CDS_TEST | CDS_FULLSCREEN) ==
-						DISP_CHANGE_SUCCESSFUL)
-				{
-					modelist[nummodes].type = MS_FULLDIB;
-					modelist[nummodes].width = devmode.dmPelsWidth;
-					modelist[nummodes].height = devmode.dmPelsHeight;
-					modelist[nummodes].modenum = 0;
-					modelist[nummodes].mode13 = 0;
-					modelist[nummodes].stretched = 0;
-					modelist[nummodes].halfscreen = 0;
-					modelist[nummodes].dib = 1;
-					modelist[nummodes].fullscreen = 1;
-					modelist[nummodes].bpp = devmode.dmBitsPerPel;
-					sprintf (modelist[nummodes].modedesc, "%dx%d",
-							 devmode.dmPelsWidth, devmode.dmPelsHeight);
-
-				// if the width is more than twice the height, reduce it by half because this
-				// is probably a dual-screen monitor
-					if (!COM_CheckParm("-noadjustaspect"))
-					{
-						if (modelist[nummodes].width > (modelist[nummodes].height*2))
-						{
-							modelist[nummodes].width >>= 1;
-							modelist[nummodes].halfscreen = 1;
-							sprintf (modelist[nummodes].modedesc, "%dx%d",
-									 modelist[nummodes].width,
-									 modelist[nummodes].height);
-						}
-					}
-
-					for (i=originalnummodes, existingmode = 0 ; i<nummodes ; i++)
-					{
-						if ((modelist[nummodes].width == modelist[i].width) &&
-							(modelist[nummodes].height == modelist[i].height))
-						{
-						// pick the lowest available bpp
-							if (modelist[nummodes].bpp < modelist[i].bpp)
-								modelist[i] = modelist[nummodes];
-
-							existingmode = 1;
-							break;
-						}
-					}
-
-					if (!existingmode)
-					{
-						if (modelist[nummodes].width < lowestres)
-							lowestres = modelist[nummodes].width;
-
-						nummodes++;
-					}
-				}
-			}
-
-			modenum++;
-		} while (stat);
-	}
-
-// see if there are any low-res modes that aren't being reported
-	numlowresmodes = sizeof(lowresmodes) / sizeof(lowresmodes[0]);
-	bpp = 8;
-	done = 0;
-
-// first make sure the driver doesn't just answer yes to all tests
-	devmode.dmBitsPerPel = 8;
-	devmode.dmPelsWidth = 42;
-	devmode.dmPelsHeight = 37;
-	devmode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-
-	if (ChangeDisplaySettings (&devmode, CDS_TEST | CDS_FULLSCREEN) ==
-			DISP_CHANGE_SUCCESSFUL)
-	{
-		done = 1;
-	}
-
-	while (!done)
-	{
-		for (j=0 ; (j<numlowresmodes) && (nummodes < MAX_MODE_LIST) ; j++)
-		{
-			devmode.dmBitsPerPel = bpp;
-			devmode.dmPelsWidth = lowresmodes[j].width;
-			devmode.dmPelsHeight = lowresmodes[j].height;
-			devmode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-
-			if (ChangeDisplaySettings (&devmode, CDS_TEST | CDS_FULLSCREEN) ==
-					DISP_CHANGE_SUCCESSFUL)
-			{
-					modelist[nummodes].type = MS_FULLDIB;
-					modelist[nummodes].width = devmode.dmPelsWidth;
-					modelist[nummodes].height = devmode.dmPelsHeight;
-					modelist[nummodes].modenum = 0;
-					modelist[nummodes].mode13 = 0;
-					modelist[nummodes].stretched = 0;
-					modelist[nummodes].halfscreen = 0;
-					modelist[nummodes].dib = 1;
-					modelist[nummodes].fullscreen = 1;
-					modelist[nummodes].bpp = devmode.dmBitsPerPel;
-					sprintf (modelist[nummodes].modedesc, "%dx%d",
-							 devmode.dmPelsWidth, devmode.dmPelsHeight);
-
-			// we only want the lowest-bpp version of each mode
-				for (i=originalnummodes, existingmode = 0 ; i<nummodes ; i++)
-				{
-					if ((modelist[nummodes].width == modelist[i].width)   &&
-						(modelist[nummodes].height == modelist[i].height) &&
-						(modelist[nummodes].bpp >= modelist[i].bpp))
-					{
-						existingmode = 1;
-						break;
-					}
-				}
-
-				if (!existingmode)
-				{
-					if (modelist[nummodes].width < lowestres)
-						lowestres = modelist[nummodes].width;
-
-					nummodes++;
-				}
-			}
-		}
-
-		switch (bpp)
-		{
-			case 8:
-				bpp = 16;
-				break;
-
-			case 16:
-				bpp = 32;
-				break;
-
-			case 32:
-				done = 1;
-				break;
-		}
-	}
-
-// now add the lowest stretch-by-2 pseudo-modes between 320-wide
-// (inclusive) and lowest real res (not inclusive)
-// don't bother if we have a real VGA mode 0x13 mode
-	if (!is_mode0x13)
-	{
-		for (i=originalnummodes, cstretch=0 ; i<nummodes ; i++)
-		{
-			if (((modelist[i].width >> 1) < lowestres) &&
-				((modelist[i].width >> 1) >= 320))
-			{
-				lowestres = modelist[i].width >> 1;
-				cstretch = 1;
-				mstretch = i;
-			}
-		}
-
-		if ((nummodes + cstretch) > MAX_MODE_LIST)
-			cstretch = MAX_MODE_LIST - nummodes;
-
-		if (cstretch > 0)
-		{
-			for (i=(nummodes-1) ; i>=originalnummodes ; i--)
-				modelist[i+cstretch] = modelist[i];
-
-			nummodes += cstretch;
-			istretch = originalnummodes;
-
-			modelist[istretch] = modelist[mstretch];
-			modelist[istretch].width >>= 1;
-			modelist[istretch].height >>= 1;
-			modelist[istretch].stretched = 1;
-			sprintf (modelist[istretch].modedesc, "%dx%d",
-					 modelist[istretch].width, modelist[istretch].height);
-		}
-	}
-
-	if (nummodes != originalnummodes)
-		vid_default = MODE_FULLSCREEN_DEFAULT;
-	else
-		Con_SafePrintf ("No fullscreen DIB modes found\n");
-}
-
-
-/*
-=================
 VID_NumModes
 =================
 */
@@ -1121,10 +829,6 @@ char *VID_GetModeDescription2 (int mode)
 	{
 		sprintf(pinfo,"%s fullscreen", pv->modedesc);
 	}
-	else if (modelist[mode].type == MS_FULLDIB)
-	{
-		sprintf(pinfo,"%s fullscreen", pv->modedesc);
-	}
 	else
 	{
 		sprintf(pinfo, "%s windowed", pv->modedesc);
@@ -1151,10 +855,6 @@ char *VID_GetExtModeDescription (int mode)
 	{
 		sprintf(pinfo,"%s fullscreen %s",pv->modedesc,
 				MGL_modeDriverName(pv->modenum));
-	}
-	else if (modelist[mode].type == MS_FULLDIB)
-	{
-		sprintf(pinfo,"%s fullscreen DIB", pv->modedesc);
 	}
 	else
 	{
@@ -1195,23 +895,6 @@ void DestroyFullscreenWindow (void)
 }
 
 
-
-void DestroyFullDIBWindow (void)
-{
-	if (modestate == MS_FULLDIB)
-	{
-		ChangeDisplaySettings (NULL, CDS_FULLSCREEN);
-
-	// Destroy the fullscreen DIB window and associated MGL DC's
-		if (windc)
-			MGL_destroyDC(windc);
-		if (dibdc)
-			MGL_destroyDC(dibdc);
-		windc = dibdc = NULL;
-	}
-}
-
-
 qboolean VID_SetWindowedMode (int modenum)
 {
 	HDC				hdc;
@@ -1237,7 +920,6 @@ qboolean VID_SetWindowedMode (int modenum)
 	lastmodestate = modestate;
 
 	DestroyFullscreenWindow ();
-	DestroyFullDIBWindow ();
 
 	if (windc)
 		MGL_destroyDC(windc);
@@ -1329,7 +1011,6 @@ qboolean VID_SetWindowedMode (int modenum)
 	UpdateWindow (mainwindow);
 
 	modestate = MS_WINDOWED;
-	vid_fulldib_on_focus_mode = 0;
 
 // because we have set the background brush for the window to NULL
 // (to avoid flickering when re-sizing the window on the desktop),
@@ -1373,7 +1054,6 @@ qboolean VID_SetFullscreenMode (int modenum)
 	DDActive = 1;
 
 	DestroyDIBWindow ();
-	DestroyFullDIBWindow ();
 
 	mode = modelist[modenum].modenum;
 
@@ -1391,7 +1071,6 @@ qboolean VID_SetFullscreenMode (int modenum)
 	}
 
 	modestate = MS_FULLSCREEN;
-	vid_fulldib_on_focus_mode = 0;
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
 	vid.maxwarpwidth = WARP_WIDTH;
@@ -1414,113 +1093,6 @@ qboolean VID_SetFullscreenMode (int modenum)
 // shouldn't be needed, but Kendall needs to let us get the activation
 // message for this not to be needed on NT
 	AppActivate (true, false);
-
-	return true;
-}
-
-
-qboolean VID_SetFullDIBMode (int modenum)
-{
-	HDC				hdc;
-	pixel_format_t	pf;
-	int				lastmodestate;
-
-	DDActive = 0;
-
-	DestroyFullscreenWindow ();
-	DestroyDIBWindow ();
-
-	if (windc)
-		MGL_destroyDC(windc);
-	if (dibdc)
-		MGL_destroyDC(dibdc);
-	windc = dibdc = NULL;
-
-// KJB: Signal to the MGL that we are going back to windowed mode
-	if (!MGL_changeDisplayMode(grWINDOWED))
-		initFatalError();
-
-	gdevmode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-	gdevmode.dmBitsPerPel = modelist[modenum].bpp;
-	gdevmode.dmPelsWidth = modelist[modenum].width << modelist[modenum].stretched <<
-						   modelist[modenum].halfscreen;
-	gdevmode.dmPelsHeight = modelist[modenum].height << modelist[modenum].stretched;
-	gdevmode.dmSize = sizeof (gdevmode);
-
-	if (ChangeDisplaySettings (&gdevmode, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
-		Sys_Error ("Couldn't set fullscreen DIB mode");
-
-	lastmodestate = modestate;
-	modestate = MS_FULLDIB;
-	vid_fulldib_on_focus_mode = modenum;
-
-	WindowRect.top = WindowRect.left = 0;
-
-	hdc = GetDC(NULL);
-
-	WindowRect.right = modelist[modenum].width << modelist[modenum].stretched;
-	WindowRect.bottom = modelist[modenum].height << modelist[modenum].stretched;
-
-	ReleaseDC(NULL,hdc);
-
-	DIBWidth = modelist[modenum].width;
-	DIBHeight = modelist[modenum].height;
-
-	WindowStyle = WS_POPUP | WS_SYSMENU | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-	ExWindowStyle = 0;
-	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
-
-	SetWindowLong(mainwindow, GWL_STYLE, WindowStyle | WS_VISIBLE);
-	SetWindowLong(mainwindow, GWL_EXSTYLE, ExWindowStyle);
-
-	if (!SetWindowPos (mainwindow,
-					   NULL,
-					   0, 0,
-					   WindowRect.right - WindowRect.left,
-					   WindowRect.bottom - WindowRect.top,
-					   SWP_NOCOPYBITS | SWP_NOZORDER))
-	{
-		Sys_Error ("Couldn't resize DIB window");
-	}
-
-// position and show the DIB window
-	SetWindowPos (mainwindow, HWND_TOPMOST, 0, 0, 0, 0,
-				  SWP_NOSIZE | SWP_SHOWWINDOW | SWP_DRAWFRAME);
-	ShowWindow (mainwindow, SW_SHOWDEFAULT);
-	UpdateWindow (mainwindow);
-
-	// Because we have set the background brush for the window to NULL
-	// (to avoid flickering when re-sizing the window on the desktop), we
-	// clear the window to black when created, otherwise it will be
-	// empty while Quake starts up.
-	hdc = GetDC(mainwindow);
-	PatBlt(hdc,0,0,WindowRect.right,WindowRect.bottom,BLACKNESS);
-	ReleaseDC(mainwindow, hdc);
-
-	/* Create the MGL window DC and the MGL memory DC */
-	if ((windc = MGL_createWindowedDC(mainwindow)) == NULL)
-		MGL_fatalError("Unable to create Fullscreen DIB DC!");
-
-	if ((dibdc = MGL_createMemoryDC(DIBWidth,DIBHeight,8,&pf)) == NULL)
-		MGL_fatalError("Unable to create Memory DC!");
-
-	MGL_makeCurrentDC(dibdc);
-
-	vid.buffer = vid.conbuffer = vid.direct = dibdc->surface;
-	vid.rowbytes = vid.conrowbytes = dibdc->mi.bytesPerLine;
-	vid.numpages = 1;
-	vid.maxwarpwidth = WARP_WIDTH;
-	vid.maxwarpheight = WARP_HEIGHT;
-	vid.height = vid.conheight = DIBHeight;
-	vid.width = vid.conwidth = DIBWidth;
-	vid.aspect = ((float)vid.height / (float)vid.width) *
-				(320.0 / 240.0);
-
-	vid_stretched = modelist[modenum].stretched;
-
-// needed because we're not getting WM_MOVE messages fullscreen on NT
-	window_x = 0;
-	window_y = 0;
 
 	return true;
 }
@@ -1621,12 +1193,6 @@ int VID_SetMode (int modenum, unsigned char *palette)
 			IN_ShowMouse ();
 			stat = VID_SetWindowedMode(modenum);
 		}
-	}
-	else if (modelist[modenum].type == MS_FULLDIB)
-	{
-		stat = VID_SetFullDIBMode(modenum);
-		IN_ActivateMouse ();
-		IN_HideMouse ();
 	}
 	else
 	{
@@ -2097,16 +1663,6 @@ void	VID_Init (unsigned char *palette)
 	if (!dibonly)
 		VID_InitMGLFull (global_hInstance);
 
-// if there are no non-windowed modes, or only windowed and mode 0x13, then use
-// fullscreen DIBs as well
-	if (((nummodes == basenummodes) ||
-		 ((nummodes == (basenummodes + 1)) && is_mode0x13)) &&
-		!COM_CheckParm ("-nofulldib"))
-
-	{
-		VID_InitFullDIB (global_hInstance);
-	}
-
 	vid.maxwarpwidth = WARP_WIDTH;
 	vid.maxwarpheight = WARP_HEIGHT;
 	vid.colormap = host_colormap;
@@ -2185,16 +1741,12 @@ void	VID_Shutdown (void)
 
 	if (vid_initialized)
 	{
-		if (modestate == MS_FULLDIB)
-			ChangeDisplaySettings (NULL, CDS_FULLSCREEN);
-
 		PostMessage (HWND_BROADCAST, WM_PALETTECHANGED, (WPARAM)mainwindow, (LPARAM)0);
 		PostMessage (HWND_BROADCAST, WM_SYSCOLORCHANGE, (WPARAM)0, (LPARAM)0);
 
 		AppActivate(false, false);
 		DestroyDIBWindow ();
 		DestroyFullscreenWindow ();
-		DestroyFullDIBWindow ();
 
 		if (hwnd_dialog)
 			DestroyWindow (hwnd_dialog);
@@ -2648,13 +2200,6 @@ void AppActivate(BOOL fActive, BOOL minimize)
 	ActiveApp = fActive;
 
 // messy, but it seems to work
-	if (vid_fulldib_on_focus_mode)
-	{
-		Minimized = minimize;
-
-		if (Minimized)
-			ActiveApp = false;
-	}
 
 	MGL_appActivate(windc, ActiveApp);
 
@@ -2667,7 +2212,7 @@ void AppActivate(BOOL fActive, BOOL minimize)
 		{
 			if (ActiveApp)
 			{
-				if ((modestate == MS_WINDOWED) || (modestate == MS_FULLDIB))
+				if (modestate == MS_WINDOWED)
 				{
 					if (GetSystemPaletteUse(hdc) == SYSPAL_STATIC)
 					{
@@ -2716,58 +2261,14 @@ void AppActivate(BOOL fActive, BOOL minimize)
 // minimize/restore fulldib windows/mouse-capture normal windows on demand
 	if (!in_mode_set)
 	{
-		if (ActiveApp)
+		if ((modestate == MS_WINDOWED) && _windowed_mouse.value)
 		{
-			if (vid_fulldib_on_focus_mode)
-			{
-				if (vid_initialized)
-				{
-					msg_suppress_1 = true;	// don't want to see normal mode set message
-					VID_SetMode (vid_fulldib_on_focus_mode, vid_curpal);
-					msg_suppress_1 = false;
-
-					t = in_mode_set;
-					in_mode_set = true;
-					AppActivate (true, false);
-					in_mode_set = t;
-				}
-
-				IN_ActivateMouse ();
-				IN_HideMouse ();
-			}
-			else if ((modestate == MS_WINDOWED) && _windowed_mouse.value)
+			if (ActiveApp)
 			{
 				IN_ActivateMouse ();
 				IN_HideMouse ();
 			}
-		}
-
-		if (!ActiveApp)
-		{
-			if (modestate == MS_FULLDIB)
-			{
-				if (vid_initialized)
-				{
-					force_minimized = true;
-					i = vid_fulldib_on_focus_mode;
-					msg_suppress_1 = true;	// don't want to see normal mode set message
-					VID_SetMode (windowed_default, vid_curpal);
-					msg_suppress_1 = false;
-					vid_fulldib_on_focus_mode = i;
-					force_minimized = false;
-
-				// we never seem to get WM_ACTIVATE inactive from this mode set, so we'll
-				// do it manually
-					t = in_mode_set;
-					in_mode_set = true;
-					AppActivate (false, true);
-					in_mode_set = t;
-				}
-
-				IN_DeactivateMouse ();
-				IN_ShowMouse ();
-			}
-			else if ((modestate == MS_WINDOWED) && _windowed_mouse.value)
+			else
 			{
 				IN_DeactivateMouse ();
 				IN_ShowMouse ();
@@ -3003,7 +2504,7 @@ LONG WINAPI MainWndProc (
 			break;
 
 		case WM_DISPLAYCHANGE:
-			if (!in_mode_set && (modestate == MS_WINDOWED) && !vid_fulldib_on_focus_mode)
+			if (!in_mode_set && (modestate == MS_WINDOWED))
 			{
 				force_mode_set = true;
 				VID_SetMode (vid_modenum, vid_curpal);
