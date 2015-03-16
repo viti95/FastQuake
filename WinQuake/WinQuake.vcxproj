@@ -88,7 +88,7 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\Release/WinQuake.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)WinQuake.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
@@ -97,10 +97,10 @@
       <AdditionalIncludeDirectories>.\scitech\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PrecompiledHeaderOutputFile>.\Release/WinQuake.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\Release/</AssemblerListingLocation>
-      <ObjectFileName>.\Release/</ObjectFileName>
-      <ProgramDataBaseFileName>.\Release/</ProgramDataBaseFileName>
+      <PrecompiledHeaderOutputFile>$(IntDir)WinQuake.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <BrowseInformation>true</BrowseInformation>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -123,7 +123,7 @@
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Release/WinQuake.bsc</OutputFile>
+      <OutputFile>$(IntDir)WinQuake.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release GL|Win32'">
@@ -132,7 +132,7 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\release_gl/WinQuake.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)WinQuake.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
@@ -140,10 +140,10 @@
       <AdditionalIncludeDirectories>.\scitech\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;GLQUAKE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <PrecompiledHeaderOutputFile>.\release_gl/WinQuake.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\release_gl/</AssemblerListingLocation>
-      <ObjectFileName>.\release_gl/</ObjectFileName>
-      <ProgramDataBaseFileName>.\release_gl/</ProgramDataBaseFileName>
+      <PrecompiledHeaderOutputFile>$(IntDir)WinQuake.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <BrowseInformation>true</BrowseInformation>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -166,7 +166,7 @@
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\release_gl/WinQuake.bsc</OutputFile>
+      <OutputFile>$(IntDir)WinQuake.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -175,7 +175,7 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\Debug/WinQuake.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)WinQuake.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
@@ -183,10 +183,10 @@
       <AdditionalIncludeDirectories>.\scitech\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeaderOutputFile>.\Debug/WinQuake.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\Debug/</AssemblerListingLocation>
-      <ObjectFileName>.\Debug/</ObjectFileName>
-      <ProgramDataBaseFileName>.\Debug/</ProgramDataBaseFileName>
+      <PrecompiledHeaderOutputFile>$(IntDir)WinQuake.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <BrowseInformation>true</BrowseInformation>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -209,7 +209,7 @@
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Debug/WinQuake.bsc</OutputFile>
+      <OutputFile>$(IntDir)WinQuake.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">
@@ -218,7 +218,7 @@
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetEnvironment>Win32</TargetEnvironment>
-      <TypeLibraryName>.\debug_gl/WinQuake.tlb</TypeLibraryName>
+      <TypeLibraryName>$(IntDir)WinQuake.tlb</TypeLibraryName>
       <HeaderFileName />
     </Midl>
     <ClCompile>
@@ -226,10 +226,10 @@
       <AdditionalIncludeDirectories>.\scitech\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;GLQUAKE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeaderOutputFile>.\debug_gl/WinQuake.pch</PrecompiledHeaderOutputFile>
-      <AssemblerListingLocation>.\debug_gl/</AssemblerListingLocation>
-      <ObjectFileName>.\debug_gl/</ObjectFileName>
-      <ProgramDataBaseFileName>.\debug_gl/</ProgramDataBaseFileName>
+      <PrecompiledHeaderOutputFile>$(IntDir)WinQuake.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <BrowseInformation>true</BrowseInformation>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -252,7 +252,7 @@
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\debug_gl/WinQuake.bsc</OutputFile>
+      <OutputFile>$(IntDir)WinQuake.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
