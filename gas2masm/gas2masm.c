@@ -33,7 +33,7 @@ typedef enum {NOT_WHITESPACE, WHITESPACE, TOKEN_AVAILABLE, LINE_DONE, FILE_DONE,
 typedef enum {NOSEG, DATASEG, TEXTSEG} segtype;
 
 int		tokennum;
-int		inline, outline;
+int		in_line, outline;
 
 char	*token;
 char	tokens[MAX_TOKENS][MAX_TOKEN_LENGTH+1];
@@ -113,7 +113,7 @@ void emitanoperand (int tnum, char *type, int notdata)
 	// register
 		for (i=0 ; i<numregs ; i++)
 		{
-			if (!strcmpi (pt, reglist[i].text))
+			if (!_strcmpi (pt, reglist[i].text))
 			{
 				printf ("%s", reglist[i].emit);
 				return;
@@ -243,7 +243,7 @@ void emitanoperand (int tnum, char *type, int notdata)
 
 					for (i=0 ; i<numregs ; i++)
 					{
-						if (!strnicmp (pt, reglist[i].text,
+						if (!_strnicmp (pt, reglist[i].text,
 							reglist[i].len))
 						{
 							strcpy (&temp[index], reglist[i].emit);
@@ -547,7 +547,7 @@ void emit_1_or_2_operandsl_vartext (char *str0, char *str1)
 	}
 	else if (tokennum == 3)
 	{
-		if (!strcmpi (tokens[2], "%st(0)"))
+		if (!_strcmpi (tokens[2], "%st(0)"))
 			printf (" %s ", str0);
 		else
 			printf (" %s ", str1);
@@ -758,7 +758,7 @@ int	numparse = sizeof (parsedata) / sizeof (parsedata[0]);
 
 void errorexit (void)
 {
-	fprintf (stderr, "In line: %d, out line: %d\n", inline, outline);
+	fprintf (stderr, "In line: %d, out line: %d\n", in_line, outline);
 	exit (1);
 }
 
@@ -925,7 +925,7 @@ tokenstat parseline (void)
 
 				for (i=0 ; i<numparse; i++)
 				{
-					if (!strcmpi (tokens[0], parsedata[i].text))
+					if (!_strcmpi (tokens[0], parsedata[i].text))
 					{
 						if (((parsedata[i].numtokens > 0) &&
 							 (parsedata[i].numtokens != tokennum)) ||
@@ -1025,13 +1025,13 @@ void main (int argc, char **argv)
 
 	printf (" .386P\n"
             " .model FLAT\n");
-	inline = 1;
+	in_line = 1;
 	outline = 3;
 
 	for ( ;; )
 	{
 		stat = parseline ();
-		inline++;
+		in_line++;
 
 		switch (stat)
 		{
