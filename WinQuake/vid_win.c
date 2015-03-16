@@ -48,7 +48,7 @@ static qboolean	startwindowed = 0, windowed_mode_set;
 static int		firstupdate = 1;
 static qboolean	vid_initialized = false, vid_palettized;
 static int		lockcount;
-static qboolean	force_minimized, in_mode_set, is_mode0x13, force_mode_set;
+static qboolean	force_minimized, in_mode_set, force_mode_set;
 static int		vid_stretched, windowed_mouse;
 static qboolean	palette_changed, syscolchg, vid_mode_set, hide_window, pal_is_nostatic;
 static HICON	hIcon;
@@ -102,7 +102,6 @@ unsigned short	d_8to16table[256];
 unsigned	d_8to24table[256];
 
 int     driver = grDETECT,mode;
-bool    useWinDirect = true, useDirectDraw = true;
 MGLDC	*mgldc = NULL,*memdc = NULL,*dibdc = NULL,*windc = NULL;
 
 typedef struct {
@@ -110,7 +109,6 @@ typedef struct {
 	int			width;
 	int			height;
 	int			modenum;
-	int			mode13;
 	int			stretched;
 	int			dib;
 	int			fullscreen;
@@ -221,31 +219,6 @@ void ClearAllStates (void)
 
 /*
 ================
-VID_CheckAdequateMem
-================
-*/
-qboolean VID_CheckAdequateMem (int width, int height)
-{
-	int		tbuffersize;
-
-	tbuffersize = width * height * sizeof (*d_pzbuffer);
-
-	tbuffersize += D_SurfaceCacheForRes (width, height);
-
-// see if there's enough memory, allowing for the normal mode 0x13 pixel,
-// z, and surface buffers
-	if ((host_parms.memsize - tbuffersize + SURFCACHE_SIZE_AT_320X200 +
-		 0x10000 * 3) < minimum_memory)
-	{
-		return false;		// not enough memory for mode
-	}
-
-	return true;
-}
-
-
-/*
-================
 VID_AllocBuffers
 ================
 */
@@ -342,28 +315,7 @@ int VID_Suspend (MGLDC *dc,m_int flags)
 
 void registerAllDispDrivers(void)
 {
-	/* Event though these driver require WinDirect, we register
-	 * them so that they will still be available even if DirectDraw
-	 * is present and the user has disable the high performance
-	 * WinDirect modes.
-	 */
-	MGL_registerDriver(MGL_VGA8NAME,VGA8_driver);
-//	MGL_registerDriver(MGL_VGAXNAME,VGAX_driver);
-
-	/* Register display drivers */
-	if (useWinDirect)
-	{
-//we don't want VESA 1.X drivers		MGL_registerDriver(MGL_SVGA8NAME,SVGA8_driver);
-		MGL_registerDriver(MGL_LINEAR8NAME,LINEAR8_driver);
-
-		if (!COM_CheckParm ("-novbeaf"))
-			MGL_registerDriver(MGL_ACCEL8NAME,ACCEL8_driver);
-	}
-
-	if (useDirectDraw)
-	{
-		MGL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
-	}
+	MGL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
 }
 
 
@@ -379,19 +331,6 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 	int			i, xRes, yRes, bits, vMode, lowres, curmode, temp;
 	int			lowstretchedres, stretchedmode, lowstretched;
     uchar		*m;
-
-// FIXME: NT is checked for because MGL currently has a bug that causes it
-// to try to use WinDirect modes even on NT
-	if (COM_CheckParm("-nowindirect") ||
-		COM_CheckParm("-nowd") ||
-		COM_CheckParm("-novesa") ||
-		WinNT)
-	{
-		useWinDirect = false;
-	}
-
-	if (COM_CheckParm("-nodirectdraw") || COM_CheckParm("-noddraw") || COM_CheckParm("-nodd"))
-		useDirectDraw = false;
 
 	// Initialise the MGL
 	MGL_unregisterAllDrivers();
@@ -417,18 +356,6 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 				(yRes <= MAXHEIGHT) &&
 				(curmode < MAX_MODE_LIST))
 			{
-				if (m[i] == grVGA_320x200x256)
-					is_mode0x13 = true;
-
-				if (!COM_CheckParm("-noforcevga"))
-				{
-					if (m[i] == grVGA_320x200x256)
-					{
-						mode = i;
-						break;
-					}
-				}
-
 				if (xRes < lowres)
 				{
 					lowres = xRes;
@@ -488,12 +415,6 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 				modelist[curmode].width = xRes;
 				modelist[curmode].height = yRes;
 				sprintf (modelist[curmode].modedesc, "%dx%d", xRes, yRes);
-
-				if (m[i] == grVGA_320x200x256)
-					modelist[curmode].mode13 = 1;
-				else
-					modelist[curmode].mode13 = 0;
-
 				modelist[curmode].modenum = m[i];
 				modelist[curmode].stretched = 0;
 				modelist[curmode].dib = 0;
@@ -640,7 +561,6 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	modelist[0].width = 320;
 	modelist[0].height = 240;
 	strcpy (modelist[0].modedesc, "320x240");
-	modelist[0].mode13 = 0;
 	modelist[0].modenum = MODE_WINDOWED;
 	modelist[0].stretched = 0;
 	modelist[0].dib = 1;
@@ -652,7 +572,6 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	modelist[1].width = 640;
 	modelist[1].height = 480;
 	strcpy (modelist[1].modedesc, "640x480");
-	modelist[1].mode13 = 0;
 	modelist[1].modenum = MODE_WINDOWED + 1;
 	modelist[1].stretched = 1;
 	modelist[1].dib = 1;
@@ -664,7 +583,6 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	modelist[2].width = 800;
 	modelist[2].height = 600;
 	strcpy (modelist[2].modedesc, "800x600");
-	modelist[2].mode13 = 0;
 	modelist[2].modenum = MODE_WINDOWED + 2;
 	modelist[2].stretched = 1;
 	modelist[2].dib = 1;
@@ -767,14 +685,7 @@ char *VID_GetModeDescriptionMemCheck (int mode)
 	pv = VID_GetModePtr (mode);
 	pinfo = pv->modedesc;
 
-	if (VID_CheckAdequateMem (pv->width, pv->height))
-	{
-		return pinfo;
-	}
-	else
-	{
-		return NULL;
-	}
+	return pinfo;
 }
 
 
@@ -1497,10 +1408,7 @@ void VID_DescribeModes_f (void)
 {
 	int			i, lnummodes;
 	char		*pinfo;
-	qboolean	na;
 	vmode_t		*pv;
-
-	na = false;
 
 	lnummodes = VID_NumModes ();
 
@@ -1508,21 +1416,7 @@ void VID_DescribeModes_f (void)
 	{
 		pv = VID_GetModePtr (i);
 		pinfo = VID_GetExtModeDescription (i);
-
-		if (VID_CheckAdequateMem (pv->width, pv->height))
-		{
-			Con_Printf ("%2d: %s\n", i, pinfo);
-		}
-		else
-		{
-			Con_Printf ("**: %s\n", pinfo);
-			na = true;
-		}
-	}
-
-	if (na)
-	{
-		Con_Printf ("\n[**: not enough system RAM for mode]\n");
+		Con_Printf ("%2d: %s\n", i, pinfo);
 	}
 }
 
@@ -2548,7 +2442,6 @@ typedef struct
 	int		modenum;
 	char	*desc;
 	int		iscur;
-	int		ismode13;
 	int		width;
 } modedesc_t;
 
@@ -2580,7 +2473,6 @@ void VID_MenuDraw (void)
 		ptr = VID_GetModeDescriptionMemCheck (i);
 		modedescs[i].modenum = modelist[i].modenum;
 		modedescs[i].desc = ptr;
-		modedescs[i].ismode13 = 0;
 		modedescs[i].iscur = 0;
 
 		if (vid_modenum == i)
@@ -2614,7 +2506,7 @@ void VID_MenuDraw (void)
 
 			if (dup || (vid_wmodes < MAX_MODEDESCS))       
 			{
-				if (!dup || !modedescs[dupmode].ismode13 || COM_CheckParm("-noforcevga"))
+				if (!dup || COM_CheckParm("-noforcevga"))
 				{
 					if (dup)
 					{
@@ -2627,7 +2519,6 @@ void VID_MenuDraw (void)
 
 					modedescs[k].modenum = i;
 					modedescs[k].desc = ptr;
-					modedescs[k].ismode13 = pv->mode13;
 					modedescs[k].iscur = 0;
 					modedescs[k].width = pv->width;
 
