@@ -270,15 +270,6 @@
     <ClCompile Include="zone.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cd_dshow.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cd_bass.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="snd_bass.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="progdefs.q1" />
