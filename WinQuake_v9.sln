@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual C++ Express 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gas2masm", "gas2masm\gas2masm_v9.vcproj", "{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winquake", "WinQuake\WinQuake_v9.vcproj", "{86227E99-F7DD-45C8-8C07-1F4145C706F6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D} = {D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		GL Debug|Win32 = GL Debug|Win32
+		Release|Win32 = Release|Win32
+		GL Release|Win32 = GL Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.Debug|Win32.Build.0 = Debug|Win32
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.GL Debug|Win32.ActiveCfg = GL Debug|Win32
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.GL Debug|Win32.Build.0 = GL Debug|Win32
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.Release|Win32.ActiveCfg = Release|Win32
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.Release|Win32.Build.0 = Release|Win32
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.GL Release|Win32.ActiveCfg = GL Release|Win32
+		{D0EE6FF4-946E-44D3-828D-8D1BF23E8A0D}.GL Release|Win32.Build.0 = GL Release|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.Debug|Win32.Build.0 = Debug|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.GL Debug|Win32.ActiveCfg = GL Debug|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.GL Debug|Win32.Build.0 = GL Debug|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.Release|Win32.ActiveCfg = Release|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.Release|Win32.Build.0 = Release|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.GL Release|Win32.ActiveCfg = GL Release|Win32
+		{86227E99-F7DD-45C8-8C07-1F4145C706F6}.GL Release|Win32.Build.0 = GL Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
