@@ -69,7 +69,6 @@
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/gas2masm.pdb"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -154,7 +153,6 @@
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/gas2masm.pdb"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -239,7 +237,7 @@
 				Name="VCLinkerTool"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				ProgramDatabaseFile=".\Release/gas2masm.pdb"
+				GenerateDebugInformation="true"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -324,7 +322,7 @@
 				Name="VCLinkerTool"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				ProgramDatabaseFile=".\Release/gas2masm.pdb"
+				GenerateDebugInformation="true"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -366,14 +364,6 @@
 				RelativePath="gas2masm.c"
 				>
 				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
@@ -383,6 +373,14 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="GL Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						PreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
