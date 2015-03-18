@@ -669,10 +669,10 @@ void VID_CheckModedescFixup (int mode)
 
 /*
 =================
-VID_GetModeDescription
+VID_GetModeDescriptionMemCheck
 =================
 */
-char *VID_GetModeDescription (int mode)
+char *VID_GetModeDescriptionMemCheck (int mode)
 {
 	char		*pinfo;
 	vmode_t		*pv;
@@ -2470,7 +2470,7 @@ void VID_MenuDraw (void)
 
 	for (i=0 ; i<3 ; i++)
 	{
-		ptr = VID_GetModeDescription (i);
+		ptr = VID_GetModeDescriptionMemCheck (i);
 		modedescs[i].modenum = modelist[i].modenum;
 		modedescs[i].desc = ptr;
 		modedescs[i].iscur = 0;
@@ -2484,7 +2484,7 @@ void VID_MenuDraw (void)
 	
 	for (i=3 ; i<lnummodes ; i++)
 	{
-		ptr = VID_GetModeDescription (i);
+		ptr = VID_GetModeDescriptionMemCheck (i);
 		pv = VID_GetModePtr (i);
 
 	// we only have room for 15 fullscreen modes, so don't allow
