@@ -2164,7 +2164,7 @@ void	VID_Init (unsigned char *palette)
 	vid_initialized = true;
 
 	force_mode_set = true;
-	VID_SetMode (vid_default, palette);
+	VID_SetMode (windowed_default, palette);
 	force_mode_set = false;
 
 	vid_realmode = vid_modenum;
