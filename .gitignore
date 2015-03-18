@@ -1,0 +1,18 @@
+/Debug
+/GL Debug
+/GL Release
+/Release
+/WinQuake/Debug
+/WinQuake/GL Debug
+/WinQuake/GL Release
+/WinQuake/ID1
+/WinQuake/Release
+/WinQuake/debug_gl
+/WinQuake/release_gl
+/gas2masm/Debug
+/gas2masm/GL Debug
+/gas2masm/GL Release
+/gas2masm/Release
+*.user
+/*.ncb
+/*.suo
