@@ -111,7 +111,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/nodefaultlib:libc.lib %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>comctl32.lib;mgllt.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;mgllt.lib;dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -154,7 +154,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/nodefaultlib:libc.lib %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>comctl32.lib;mgllt.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;mgllt.lib;dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -197,7 +197,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/nodefaultlib:libc.lib %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>comctl32.lib;mgllt.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;mgllt.lib;dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -240,7 +240,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/nodefaultlib:libc.lib %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>comctl32.lib;mgllt.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;mgllt.lib;dsound.lib;dxguid.lib;winmm.lib;wsock32.lib;opengl32.lib;glu32.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -1037,7 +1037,7 @@ del "$(IntDir)%(Filename).spp"
     <Image Include="quake.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\gas2masm\gas2masm.vcxproj">
+    <ProjectReference Include="..\gas2masm\gas2masm_v12.vcxproj">
       <Project>{d0ee6ff4-946e-44d3-828d-8d1bf23e8a0d}</Project>
     </ProjectReference>
   </ItemGroup>

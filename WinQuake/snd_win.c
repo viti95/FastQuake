@@ -20,10 +20,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "winquake.h"
 
-#define iDirectSoundCreate(a,b,c)	pDirectSoundCreate(a,b,c)
-
-HRESULT (WINAPI *pDirectSoundCreate)(GUID FAR *lpGUID, LPDIRECTSOUND FAR *lplpDS, IUnknown FAR *pUnkOuter);
-
 // 64K is > 1 second at 16-bit, 22050 Hz
 #define SECONDARY_BUFFER_SIZE	0x10000
 
@@ -49,8 +45,6 @@ MMTIME		mmstarttime;
 
 LPDIRECTSOUND pDS;
 LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
-
-HINSTANCE hInstDS;
 
 qboolean SNDDMA_InitDirect (void);
 
@@ -150,26 +144,7 @@ sndinitstat SNDDMA_InitDirect (void)
     format.nAvgBytesPerSec = format.nSamplesPerSec
 		*format.nBlockAlign; 
 
-	if (!hInstDS)
-	{
-		hInstDS = LoadLibrary("dsound.dll");
-		
-		if (hInstDS == NULL)
-		{
-			Con_SafePrintf ("Couldn't load dsound.dll\n");
-			return SIS_FAILURE;
-		}
-
-		pDirectSoundCreate = (void *)GetProcAddress(hInstDS,"DirectSoundCreate");
-
-		if (!pDirectSoundCreate)
-		{
-			Con_SafePrintf ("Couldn't get DS proc addr\n");
-			return SIS_FAILURE;
-		}
-	}
-
-	while ((hresult = iDirectSoundCreate(NULL, &pDS, NULL)) != DS_OK)
+	while ((hresult = DirectSoundCreate(NULL, &pDS, NULL)) != DS_OK)
 	{
 		if (hresult != DSERR_ALLOCATED)
 		{
