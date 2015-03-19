@@ -27,7 +27,6 @@ typedef enum {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
 
 static qboolean	dsound_init;
 static qboolean	snd_firsttime = true;
-static qboolean	primary_format_set;
 
 static int	sample16;
 
@@ -195,31 +194,7 @@ sndinitstat SNDDMA_InitDirect (void)
 
 	memset(&dsbcaps, 0, sizeof(dsbcaps));
 	dsbcaps.dwSize = sizeof(dsbcaps);
-	primary_format_set = false;
 
-	if (!COM_CheckParm ("-snoforceformat"))
-	{
-		if (DS_OK == pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSPBuf, NULL))
-		{
-			pformat = format;
-
-			if (DS_OK != pDSPBuf->lpVtbl->SetFormat (pDSPBuf, &pformat))
-			{
-				if (snd_firsttime)
-					Con_SafePrintf ("Set primary sound buffer format: no\n");
-			}
-			else
-			{
-				if (snd_firsttime)
-					Con_SafePrintf ("Set primary sound buffer format: yes\n");
-
-				primary_format_set = true;
-			}
-		}
-	}
-
-	if (!primary_format_set || !COM_CheckParm ("-primarysound"))
-	{
 	// create the secondary buffer we'll actually work with
 		memset (&dsbuf, 0, sizeof(dsbuf));
 		dsbuf.dwSize = sizeof(DSBUFFERDESC);
@@ -250,25 +225,6 @@ sndinitstat SNDDMA_InitDirect (void)
 
 		if (snd_firsttime)
 			Con_SafePrintf ("Using secondary sound buffer\n");
-	}
-	else
-	{
-		if (DS_OK != pDS->lpVtbl->SetCooperativeLevel (pDS, mainwindow, DSSCL_WRITEPRIMARY))
-		{
-			Con_SafePrintf ("Set coop level failed\n");
-			FreeSound ();
-			return SIS_FAILURE;
-		}
-
-		if (DS_OK != pDSPBuf->lpVtbl->GetCaps (pDSPBuf, &dsbcaps))
-		{
-			Con_Printf ("DS:GetCaps failed\n");
-			return SIS_FAILURE;
-		}
-
-		pDSBuf = pDSPBuf;
-		Con_SafePrintf ("Using primary sound buffer\n");
-	}
 
 	// Make sure mixer is active
 	pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING);
