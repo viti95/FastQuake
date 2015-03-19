@@ -184,26 +184,12 @@ sndinitstat SNDDMA_InitDirect (void)
 		return SIS_FAILURE;
 	}
 
-// get access to the primary buffer, if possible, so we can set the
-// sound hardware format
-	memset (&dsbuf, 0, sizeof(dsbuf));
-	dsbuf.dwSize = sizeof(DSBUFFERDESC);
-	dsbuf.dwFlags = DSBCAPS_PRIMARYBUFFER;
-	dsbuf.dwBufferBytes = 0;
-	dsbuf.lpwfxFormat = NULL;
-
-	memset(&dsbcaps, 0, sizeof(dsbcaps));
-	dsbcaps.dwSize = sizeof(dsbcaps);
-
 	// create the secondary buffer we'll actually work with
 	memset (&dsbuf, 0, sizeof(dsbuf));
 	dsbuf.dwSize = sizeof(DSBUFFERDESC);
 	dsbuf.dwFlags = DSBCAPS_CTRLFREQUENCY | DSBCAPS_LOCSOFTWARE;
 	dsbuf.dwBufferBytes = SECONDARY_BUFFER_SIZE;
 	dsbuf.lpwfxFormat = &format;
-
-	memset(&dsbcaps, 0, sizeof(dsbcaps));
-	dsbcaps.dwSize = sizeof(dsbcaps);
 
 	if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL))
 	{
@@ -215,6 +201,9 @@ sndinitstat SNDDMA_InitDirect (void)
 	shm->channels = format.nChannels;
 	shm->samplebits = format.wBitsPerSample;
 	shm->speed = format.nSamplesPerSec;
+
+	memset(&dsbcaps, 0, sizeof(dsbcaps));
+	dsbcaps.dwSize = sizeof(dsbcaps);
 
 	if (DS_OK != pDSBuf->lpVtbl->GetCaps (pDSBuf, &dsbcaps))
 	{
