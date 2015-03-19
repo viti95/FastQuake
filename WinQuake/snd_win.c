@@ -23,8 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // 64K is > 1 second at 16-bit, 22050 Hz
 #define SECONDARY_BUFFER_SIZE	0x10000
 
-typedef enum {SIS_SUCCESS, SIS_FAILURE, SIS_NOTAVAIL} sndinitstat;
-
 static qboolean	dsound_init;
 static qboolean	snd_firsttime = true;
 
@@ -107,7 +105,7 @@ SNDDMA_InitDirect
 Direct-Sound support
 ==================
 */
-sndinitstat SNDDMA_InitDirect (void)
+qboolean SNDDMA_InitDirect (void)
 {
 	DSBUFFERDESC	dsbuf;
 	DSBCAPS			dsbcaps;
@@ -138,14 +136,14 @@ sndinitstat SNDDMA_InitDirect (void)
 	if (DirectSoundCreate(NULL, &pDS, NULL) != DS_OK)
 	{
 		Con_SafePrintf ("DirectSound create failed\n");
-		return SIS_FAILURE;
+		return false;
 	}
 
 	if (DS_OK != pDS->lpVtbl->SetCooperativeLevel (pDS, mainwindow, DSSCL_PRIORITY))
 	{
 		Con_SafePrintf ("Set coop level failed\n");
 		FreeSound ();
-		return SIS_FAILURE;
+		return false;
 	}
 
 	// create the secondary buffer we'll actually work with
@@ -159,7 +157,7 @@ sndinitstat SNDDMA_InitDirect (void)
 	{
 		Con_SafePrintf ("DS:CreateSoundBuffer Failed");
 		FreeSound ();
-		return SIS_FAILURE;
+		return false;
 	}
 
 	shm->channels = format.nChannels;
@@ -173,7 +171,7 @@ sndinitstat SNDDMA_InitDirect (void)
 	{
 		Con_SafePrintf ("DS:GetCaps failed\n");
 		FreeSound ();
-		return SIS_FAILURE;
+		return false;
 	}
 
 	if (snd_firsttime)
@@ -199,14 +197,14 @@ sndinitstat SNDDMA_InitDirect (void)
 		{
 			Con_SafePrintf ("SNDDMA_InitDirect: DS::Lock Sound Buffer Failed\n");
 			FreeSound ();
-			return SIS_FAILURE;
+			return false;
 		}
 
 		if (++reps > 10000)
 		{
 			Con_SafePrintf ("SNDDMA_InitDirect: DS: couldn't restore buffer\n");
 			FreeSound ();
-			return SIS_FAILURE;
+			return false;
 		}
 
 	}
@@ -233,7 +231,7 @@ sndinitstat SNDDMA_InitDirect (void)
 
 	dsound_init = true;
 
-	return SIS_SUCCESS;
+	return true;
 }
 
 
@@ -248,16 +246,16 @@ Returns false if nothing is found.
 
 int SNDDMA_Init(void)
 {
-	sndinitstat	stat;
+	qboolean	stat;
 
 	dsound_init = 0;
 
-	stat = SIS_FAILURE;	// assume DirectSound won't initialize
+	stat = false;	// assume DirectSound won't initialize
 
 	/* Init DirectSound */
 	stat = SNDDMA_InitDirect ();;
 
-	if (stat == SIS_SUCCESS)
+	if (stat)
 	{
 		if (snd_firsttime)
 			Con_SafePrintf ("DirectSound initialized\n");
