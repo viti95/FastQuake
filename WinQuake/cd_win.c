@@ -32,7 +32,7 @@ static qboolean	wasPlaying = false;
 static qboolean	initialized = false;
 static qboolean	enabled = false;
 static qboolean playLooping = false;
-//static float	cdvolume;
+static float	cdvolume;
 static byte 	remap[100];
 static byte		cdrom;
 static byte		playTrack;
@@ -265,7 +265,7 @@ static void CD_f (void)
 			Con_Printf("Currently %s track %u\n", playLooping ? "looping" : "playing", playTrack);
 		else if (wasPlaying)
 			Con_Printf("Paused %s track %u\n", playLooping ? "looping" : "playing", playTrack);
-		Con_Printf("Volume is %f\n", bgmvolume.value);
+		Con_Printf("Volume is %f\n", cdvolume);
 		return;
 	}
 }
@@ -283,6 +283,15 @@ static void CD_f (void)
 
 void CDAudio_Update(void)
 {
+	if (!enabled)
+		return;
+
+	if (bgmvolume.value != cdvolume)
+	{
+		cdvolume = bgmvolume.value;
+
+		// set volume here
+	}
 }
 
 
@@ -318,6 +327,7 @@ int CDAudio_Init(void)
 
 	return 0;
 }
+
 
 void CDAudio_Shutdown(void)
 {
