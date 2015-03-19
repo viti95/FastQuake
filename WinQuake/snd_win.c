@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // 64K is > 1 second at 16-bit, 22050 Hz
 #define SECONDARY_BUFFER_SIZE	0x10000
 
-static qboolean	dsound_init;
+qboolean	dsound_init;
 static qboolean	snd_firsttime = true;
 
 static int	sample16;
