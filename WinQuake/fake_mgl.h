@@ -1,55 +1,38 @@
-typedef struct 
-{
-	MGLDC *windc;
-	MGLDC *dibdc;
-} FakeMGLDC_DIB;
-
-typedef struct 
-{
-	MGLDC *mgldc;
-	int		aPage;					// Current active display page
-	int		vPage;					// Current visible display page
-} FakeMGLDC_FULL;
-
-typedef int (*FakeMGL_suspend_cb_t)(m_int flags);
-
-// functions common to DIB (windowed) and FULL (fullscreen DirectDraw) modes
 void 	FakeMGL_exit(void);
-void	FakeMGL_fail(void);
+void	FakeMGL_fatalError(const char *msg);
+const char * FakeMGL_errorMsg(m_int err);
+m_int 	FakeMGL_result(void);
+m_int 	FakeMGL_registerDriver(const char *name,void *driver);
+void	FakeMGL_unregisterAllDrivers(void);
+void 	FakeMGL_detectGraph(m_int *driver,m_int *mode);
+uchar *	FakeMGL_availableModes(void);
+m_int	FakeMGL_modeResolution(m_int mode,m_int *xRes,m_int *yRes,m_int *bitsPerPixel);
+bool	FakeMGL_init(m_int *driver,m_int *mode,const char *mglpath);
+bool	FakeMGL_initWindowed(const char *mglpath);
+void	FakeMGL_setSuspendAppCallback(MGL_suspend_cb_t staveState);
+bool	FakeMGL_changeDisplayMode(m_int mode);
+m_int	FakeMGL_availablePages(m_int mode);
+MGLDC	* FakeMGL_createDisplayDC(m_int numBuffers);
+m_int	FakeMGL_surfaceAccessType(MGLDC *dc);
+MGLDC *	FakeMGL_makeCurrentDC(MGLDC *dc);
+MGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize,m_int bitsPerPixel,pixel_format_t *pf);
+m_int 	FakeMGL_sizex(MGLDC *dc);
+m_int 	FakeMGL_sizey(MGLDC *dc);
+void	FakeMGL_setActivePage(MGLDC *dc,m_int page);
+void	FakeMGL_setVisualPage(MGLDC *dc,m_int page,m_int waitVRT);
+void	FakeMGL_setAppInstance(MGL_HINSTANCE hInstApp);
 const char * FakeMGL_modeDriverName(m_int mode);
-void 	FakeMGL_unlock();
+bool	FakeMGL_destroyDC(MGLDC *dc);
+void 	FakeMGL_registerFullScreenWindow(HWND hwndFullScreen);
+MGLDC	* FakeMGL_createWindowedDC(MGL_HWND hwnd);
+void 	ASMAPI MGL_beginDirectAccess(void);
+void 	ASMAPI MGL_endDirectAccess(void);
+void 	FakeMGL_setPalette(MGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex);
+void	FakeMGL_realizePalette(MGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT);
+void 	FakeMGL_stretchBltCoord(MGLDC *dst,MGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int dstRight,m_int dstBottom);
+void 	FakeMGL_bitBltCoord(MGLDC *dst,MGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op);
+bool	FakeMGL_setWinDC(MGLDC *dc,MGL_HDC hdc);
+void	FakeMGL_appActivate(MGLDC *winDC,bool active);
+bool	FakeMGL_activatePalette(MGLDC *dc,bool unrealize);
 
-// unsure if DIB or common
-void	FakeMGL_DIB_setAppInstance(MGL_HINSTANCE hInstApp);
 
-// this should definitely by FULL, but for now it's in DIB-specific part of code
-void 	FakeMGL_DIB_registerFullScreenWindow(HWND hwndFullScreen);
-
-// DIB-specific functions
-bool	FakeMGL_DIB_destroyDC(FakeMGLDC_DIB *dc);
-void	FakeMGL_DIB_appActivate(FakeMGLDC_DIB *winDC,bool active);
-void 	FakeMGL_DIB_setPalette(FakeMGLDC_DIB *dc,palette_t *pal,m_int numColors,m_int startIndex);
-bool	FakeMGL_DIB_activatePalette(FakeMGLDC_DIB *dc,bool unrealize);
-m_int 	FakeMGL_DIB_registerDriver(const char *name,void *driver);
-bool	FakeMGL_DIB_initWindowed();
-bool	FakeMGL_DIB_changeDisplayMode(m_int mode);
-bool	FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd, m_int xSize,m_int ySize, FakeMGLDC_DIB **dc);
-void 	FakeMGL_DIB_lock(FakeMGLDC_DIB *dc, void **surface, int *bytesPerLine);
-bool	FakeMGL_DIB_setWinDC(FakeMGLDC_DIB *dc,MGL_HDC hdc);
-void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dc,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op);
-
-// FULL-specific functions
-bool	FakeMGL_FULL_destroyDC(FakeMGLDC_FULL *dc);
-void 	FakeMGL_FULL_setPalette(FakeMGLDC_FULL *dc,palette_t *pal,m_int numColors,m_int startIndex);
-bool	FakeMGL_FULL_activatePalette(FakeMGLDC_FULL *dc,bool unrealize);
-m_int 	FakeMGL_FULL_registerDriver(const char *name,void *driver);
-void 	FakeMGL_FULL_detectGraph(m_int *driver,m_int *mode);
-uchar *	FakeMGL_FULL_availableModes(void);
-m_int	FakeMGL_FULL_modeResolution(m_int mode,m_int *xRes,m_int *yRes,m_int *bitsPerPixel);
-bool	FakeMGL_FULL_init(m_int *driver,m_int *mode);
-void	FakeMGL_FULL_setSuspendAppCallback(FakeMGL_suspend_cb_t staveState);
-bool	FakeMGL_FULL_changeDisplayMode(m_int mode);
-FakeMGLDC_FULL	* FakeMGL_FULL_createFullscreenDC();
-void	FakeMGL_FULL_makeCurrentDC(FakeMGLDC_FULL *dc);
-void 	FakeMGL_FULL_lock(FakeMGLDC_FULL *dc, void **surface, int *bytesPerLine);
-void	FakeMGL_FULL_flipScreen(FakeMGLDC_FULL *dc, int waitVRT);
