@@ -1753,6 +1753,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\fake_mgl.c"
+				>
+			</File>
+			<File
 				RelativePath="gl_draw.c"
 				>
 				<FileConfiguration
@@ -4778,6 +4782,10 @@
 			</File>
 			<File
 				RelativePath="draw.h"
+				>
+			</File>
+			<File
+				RelativePath=".\fake_mgl.h"
 				>
 			</File>
 			<File
