@@ -122,17 +122,6 @@ qboolean SNDDMA_InitDirect (void)
 	shm->samplebits = 16;
 	shm->speed = 11025;
 
-	memset (&format, 0, sizeof(format));
-	format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = shm->channels;
-    format.wBitsPerSample = shm->samplebits;
-    format.nSamplesPerSec = shm->speed;
-    format.nBlockAlign = format.nChannels
-		*format.wBitsPerSample / 8;
-    format.cbSize = 0;
-    format.nAvgBytesPerSec = format.nSamplesPerSec
-		*format.nBlockAlign; 
-
 	if (DirectSoundCreate(NULL, &pDS, NULL) != DS_OK)
 	{
 		Con_SafePrintf ("DirectSound create failed\n");
@@ -145,6 +134,17 @@ qboolean SNDDMA_InitDirect (void)
 		FreeSound ();
 		return false;
 	}
+
+	memset (&format, 0, sizeof(format));
+	format.wFormatTag = WAVE_FORMAT_PCM;
+    format.nChannels = shm->channels;
+    format.wBitsPerSample = shm->samplebits;
+    format.nSamplesPerSec = shm->speed;
+    format.nBlockAlign = format.nChannels
+		*format.wBitsPerSample / 8;
+    format.cbSize = 0;
+    format.nAvgBytesPerSec = format.nSamplesPerSec
+		*format.nBlockAlign; 
 
 	// create the secondary buffer we'll actually work with
 	memset (&dsbuf, 0, sizeof(dsbuf));
