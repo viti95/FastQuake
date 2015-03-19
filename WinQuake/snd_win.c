@@ -43,7 +43,7 @@ DWORD	gSndBufSize;
 MMTIME		mmstarttime;
 
 LPDIRECTSOUND pDS;
-LPDIRECTSOUNDBUFFER pDSBuf, pDSPBuf;
+LPDIRECTSOUNDBUFFER pDSBuf;
 
 qboolean SNDDMA_InitDirect (void);
 
@@ -87,12 +87,6 @@ void FreeSound (void)
 		pDSBuf->lpVtbl->Release(pDSBuf);
 	}
 
-// only release primary buffer if it's not also the mixing buffer we just released
-	if (pDSPBuf && (pDSBuf != pDSPBuf))
-	{
-		pDSPBuf->lpVtbl->Release(pDSPBuf);
-	}
-
 	if (pDS)
 	{
 		pDS->lpVtbl->SetCooperativeLevel (pDS, mainwindow, DSSCL_NORMAL);
@@ -101,7 +95,6 @@ void FreeSound (void)
 
 	pDS = NULL;
 	pDSBuf = NULL;
-	pDSPBuf = NULL;
 	lpData = NULL;
 	dsound_init = false;
 }
