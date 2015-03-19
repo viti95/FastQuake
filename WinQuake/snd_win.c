@@ -196,35 +196,35 @@ sndinitstat SNDDMA_InitDirect (void)
 	dsbcaps.dwSize = sizeof(dsbcaps);
 
 	// create the secondary buffer we'll actually work with
-		memset (&dsbuf, 0, sizeof(dsbuf));
-		dsbuf.dwSize = sizeof(DSBUFFERDESC);
-		dsbuf.dwFlags = DSBCAPS_CTRLFREQUENCY | DSBCAPS_LOCSOFTWARE;
-		dsbuf.dwBufferBytes = SECONDARY_BUFFER_SIZE;
-		dsbuf.lpwfxFormat = &format;
+	memset (&dsbuf, 0, sizeof(dsbuf));
+	dsbuf.dwSize = sizeof(DSBUFFERDESC);
+	dsbuf.dwFlags = DSBCAPS_CTRLFREQUENCY | DSBCAPS_LOCSOFTWARE;
+	dsbuf.dwBufferBytes = SECONDARY_BUFFER_SIZE;
+	dsbuf.lpwfxFormat = &format;
 
-		memset(&dsbcaps, 0, sizeof(dsbcaps));
-		dsbcaps.dwSize = sizeof(dsbcaps);
+	memset(&dsbcaps, 0, sizeof(dsbcaps));
+	dsbcaps.dwSize = sizeof(dsbcaps);
 
-		if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL))
-		{
-			Con_SafePrintf ("DS:CreateSoundBuffer Failed");
-			FreeSound ();
-			return SIS_FAILURE;
-		}
+	if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBuf, NULL))
+	{
+		Con_SafePrintf ("DS:CreateSoundBuffer Failed");
+		FreeSound ();
+		return SIS_FAILURE;
+	}
 
-		shm->channels = format.nChannels;
-		shm->samplebits = format.wBitsPerSample;
-		shm->speed = format.nSamplesPerSec;
+	shm->channels = format.nChannels;
+	shm->samplebits = format.wBitsPerSample;
+	shm->speed = format.nSamplesPerSec;
 
-		if (DS_OK != pDSBuf->lpVtbl->GetCaps (pDSBuf, &dsbcaps))
-		{
-			Con_SafePrintf ("DS:GetCaps failed\n");
-			FreeSound ();
-			return SIS_FAILURE;
-		}
+	if (DS_OK != pDSBuf->lpVtbl->GetCaps (pDSBuf, &dsbcaps))
+	{
+		Con_SafePrintf ("DS:GetCaps failed\n");
+		FreeSound ();
+		return SIS_FAILURE;
+	}
 
-		if (snd_firsttime)
-			Con_SafePrintf ("Using secondary sound buffer\n");
+	if (snd_firsttime)
+		Con_SafePrintf ("Using secondary sound buffer\n");
 
 	// Make sure mixer is active
 	pDSBuf->lpVtbl->Play(pDSBuf, 0, 0, DSBPLAY_LOOPING);
