@@ -119,7 +119,6 @@ sndinitstat SNDDMA_InitDirect (void)
 	DSBUFFERDESC	dsbuf;
 	DSBCAPS			dsbcaps;
 	DWORD			dwSize, dwWrite;
-	DSCAPS			dscaps;
 	WAVEFORMATEX	format, pformat; 
 	HRESULT			hresult;
 	int				reps;
@@ -161,20 +160,6 @@ sndinitstat SNDDMA_InitDirect (void)
 							"  hardware already in use\n");
 			return SIS_NOTAVAIL;
 		}
-	}
-
-	dscaps.dwSize = sizeof(dscaps);
-
-	if (DS_OK != pDS->lpVtbl->GetCaps (pDS, &dscaps))
-	{
-		Con_SafePrintf ("Couldn't get DS caps\n");
-	}
-
-	if (dscaps.dwFlags & DSCAPS_EMULDRIVER)
-	{
-		Con_SafePrintf ("No DirectSound driver installed\n");
-		FreeSound ();
-		return SIS_FAILURE;
 	}
 
 	if (DS_OK != pDS->lpVtbl->SetCooperativeLevel (pDS, mainwindow, DSSCL_EXCLUSIVE))
