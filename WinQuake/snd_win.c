@@ -135,27 +135,13 @@ sndinitstat SNDDMA_InitDirect (void)
     format.nAvgBytesPerSec = format.nSamplesPerSec
 		*format.nBlockAlign; 
 
-	while ((hresult = DirectSoundCreate(NULL, &pDS, NULL)) != DS_OK)
+	if (DirectSoundCreate(NULL, &pDS, NULL) != DS_OK)
 	{
-		if (hresult != DSERR_ALLOCATED)
-		{
-			Con_SafePrintf ("DirectSound create failed\n");
-			return SIS_FAILURE;
-		}
-
-		if (MessageBox (NULL,
-						"The sound hardware is in use by another app.\n\n"
-					    "Select Retry to try to start sound again or Cancel to run Quake with no sound.",
-						"Sound not available",
-						MB_RETRYCANCEL | MB_SETFOREGROUND | MB_ICONEXCLAMATION) != IDRETRY)
-		{
-			Con_SafePrintf ("DirectSoundCreate failure\n"
-							"  hardware already in use\n");
-			return SIS_NOTAVAIL;
-		}
+		Con_SafePrintf ("DirectSound create failed\n");
+		return SIS_FAILURE;
 	}
 
-	if (DS_OK != pDS->lpVtbl->SetCooperativeLevel (pDS, mainwindow, DSSCL_EXCLUSIVE))
+	if (DS_OK != pDS->lpVtbl->SetCooperativeLevel (pDS, mainwindow, DSSCL_PRIORITY))
 	{
 		Con_SafePrintf ("Set coop level failed\n");
 		FreeSound ();

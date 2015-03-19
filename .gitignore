@@ -16,3 +16,5 @@
 *.user
 /*.ncb
 /*.suo
+*.ncb
+*.suo
