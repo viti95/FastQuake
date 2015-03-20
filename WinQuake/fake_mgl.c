@@ -75,6 +75,11 @@ bool	FakeMGL_initWindowed()
 
 void	FakeMGL_setSuspendAppCallback(MGL_suspend_cb_t staveState)
 {
+	/*---------------------------------------------------------------------------
+	* Set a fullscreen suspend application callback function. This is used in
+	* fullscreen video modes to allow switching back to the normal operating
+	* system graphical shell (such as Windows GDI, OS/2 PM etc).
+	*-------------------------------------------------------------------------*/
 	MGL_setSuspendAppCallback(staveState);
 }
 
@@ -237,7 +242,7 @@ void	FakeMGL_appActivate(MGLDC *winDC,bool active)
 	* app is not active and allow Windows to re-map your bitmap colors on the
 	* fly. This function should be passed a pointer to the currently active
 	* MGL Windowed DC and a flag to indicate whether the app is in the background
-	* or not.   
+	* or not.
 	*/
 	MGL_appActivate(winDC, active);
 }
