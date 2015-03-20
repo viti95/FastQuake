@@ -440,7 +440,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 
 		temp = m[0];
 
-		if (!FakeMGL_init(&driver, &temp, ""))
+		if (!FakeMGL_init(&driver, &temp))
 		{
 			initFatalError();
 		}
@@ -488,7 +488,7 @@ MGLDC *createDisplayDC(int forcemem)
 	if ((dc = FakeMGL_createDisplayDC(npages)) == NULL)
 		return NULL;
 
-	if (!forcemem && (FakeMGL_surfaceAccessType(dc)) == MGL_LINEAR_ACCESS && (dc->mi.maxPage > 0))
+	if (!forcemem && dc->mi.maxPage > 0)
 	{
 		FakeMGL_makeCurrentDC(dc);
 		memdc = NULL;
@@ -556,7 +556,7 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	/* Initialise the MGL for windowed operation */
 	FakeMGL_setAppInstance(hInstance);
 	registerAllMemDrivers();
-	FakeMGL_initWindowed("");
+	FakeMGL_initWindowed();
 
 	modelist[0].type = MS_WINDOWED;
 	modelist[0].width = 320;
