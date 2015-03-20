@@ -1124,10 +1124,6 @@ LONG WINAPI MainWndProc (
         }
         break;
 
-		case MM_MCINOTIFY:
-            lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
-			break;
-
     	default:
             /* pass all unhandled messages to DefWindowProc */
             lRet = DefWindowProc (hWnd, uMsg, wParam, lParam);
