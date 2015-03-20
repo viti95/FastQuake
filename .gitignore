@@ -16,3 +16,5 @@
 /gas2masm/GL Debug
 /gas2masm/GL Release
 /gas2masm/Release
+*.suo
+*.ncb
