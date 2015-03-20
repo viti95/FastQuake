@@ -363,6 +363,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release GL|Win32'">true</ExcludedFromBuild>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
     </ClCompile>
+    <ClCompile Include="fake_mgl.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release GL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug GL|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="gl_draw.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -995,6 +999,7 @@ del "$(IntDir)%(Filename).spp"
     <ClInclude Include="dosisms.h" />
     <ClInclude Include="draw.h" />
     <ClInclude Include="d_iface.h" />
+    <ClInclude Include="fake_mgl.h" />
     <ClInclude Include="glquake.h" />
     <ClInclude Include="gl_model.h" />
     <ClInclude Include="gl_warp_sin.h" />
