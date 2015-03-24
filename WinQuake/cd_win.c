@@ -41,6 +41,21 @@ static byte		playTrack;
 static byte		maxTrack;
 
 static LPDIRECTSOUNDBUFFER pDSBufCD;
+static LPDIRECTSOUNDNOTIFY pDSBufCDNotify;
+static DWORD gCDBufSize;
+static HANDLE cdStopEvent, cdTrackEndEvent;
+
+typedef BOOL (*playcallback_t)(void *userdata, char *ptr, DWORD len);
+typedef void (*finishnotify_t)(void *userdata);
+
+struct ThreadArgList_t
+{
+	playcallback_t callback;
+	void *userdata;
+	finishnotify_t notify;
+};
+
+
 
 static void CDAudio_Eject(void)
 {
@@ -336,7 +351,7 @@ int CDAudio_Init(void)
 
 	memset (&dsbuf, 0, sizeof(dsbuf));
 	dsbuf.dwSize = sizeof(DSBUFFERDESC);
-	dsbuf.dwFlags = DSBCAPS_CTRLVOLUME;
+	dsbuf.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPOSITIONNOTIFY;
 	dsbuf.dwBufferBytes = format.nAvgBytesPerSec;
 	dsbuf.lpwfxFormat = &format;
 
@@ -346,28 +361,16 @@ int CDAudio_Init(void)
 		return -1;
 	}
 
-	if (DS_OK != pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &lpData, &dwSize, NULL, NULL, DSBLOCK_ENTIREBUFFER))
-	{
-		Con_Printf("CDAudio_Init: Lock sound buffer failed.\n");
-		pDSBuf->lpVtbl->Release(pDSBuf);
-		return -1;
-	}
+	pDSBufCD->lpVtbl->QueryInterface(pDSBufCD, &IID_IDirectSoundNotify, &pDSBufCDNotify);
 
-	memset (lpData, 0, dwSize);
-	//lpData[1] = 0x7F;
-	//cdvolume = -1;
+	gCDBufSize = dsbuf.dwBufferBytes;
 
-	pDSBufCD->lpVtbl->Unlock(pDSBufCD, lpData, dwSize, NULL, 0);
-
-	if (DS_OK != pDSBufCD->lpVtbl->Play(pDSBufCD, 0, 0, DSBPLAY_LOOPING))
-	{
-		Con_Printf("CDAudio_Init: Play sound buffer failed.\n");
-		pDSBuf->lpVtbl->Release(pDSBuf);
-		return -1;
-	}
+	cdTrackEndEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
+	cdStopEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 
 	for (n = 0; n < 100; n++)
 		remap[n] = n;
+
 	initialized = true;
 	enabled = true;
 
@@ -390,11 +393,27 @@ void CDAudio_Shutdown(void)
 	if (!initialized)
 		return;
 	CDAudio_Stop();
+	// MyDSound_WaitForFinish();
 	
+	if (pDSBufCDNotify)
+	{
+		pDSBufCDNotify->lpVtbl->Release(pDSBufCDNotify);
+		pDSBufCDNotify = NULL;
+	}
 	if (pDSBufCD)
 	{
 		pDSBufCD->lpVtbl->Stop(pDSBufCD);
 		pDSBufCD->lpVtbl->Release(pDSBufCD);
+		pDSBufCD = NULL;
 	}
-	pDSBufCD = NULL;
+	if (cdTrackEndEvent)
+	{
+		CloseHandle(cdTrackEndEvent);
+		cdTrackEndEvent = NULL;
+	}
+	if (cdStopEvent)
+	{
+		CloseHandle(cdStopEvent);
+		cdStopEvent = NULL;
+	}
 }
