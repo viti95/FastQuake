@@ -142,16 +142,41 @@ static void CDAudio_CloseDoor(void)
 
 static int CDAudio_GetAudioDiskInfo(void)
 {
-	//cdValid = false;
+	int i;
 
-	//!TODO: get info here
+	cdValid = false;
 
-	//Con_DPrintf("CDAudio: no music tracks\n");
-	//return -1;
-	
+	maxTrack = 0;
+
+	// CDDA track numbers are in range of 1..99
+	for (i=1; i<100; i++)
+	{
+		FILE *f;
+		char filename[MAX_PATH];
+		sprintf(filename, "%s\\Track%03d.ogg", com_gamedir, i);
+		f = fopen(filename, "rb");
+		if (f)
+		{
+			maxTrack = i;
+			remap[i] = i;
+			fclose(f);
+		}
+		else
+		{
+			remap[i] = -1;
+			// track 1 is allowed not to exist
+			if (i > 1)
+				break;
+		}
+	}
+
+	if (maxTrack == 0)
+	{
+		Con_DPrintf("CDAudio: no music tracks\n");
+		return -1;
+	}
+
 	cdValid = true;
-	maxTrack = 12;
-
 	return 0;
 }
 
