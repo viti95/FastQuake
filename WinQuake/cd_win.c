@@ -32,15 +32,15 @@ extern	cvar_t	bgmvolume;
 extern qboolean	dsound_init;
 
 static qboolean cdValid = false;
-static qboolean	playing = false;
+static volatile qboolean playing = false;
 static qboolean	wasPlaying = false;
 static qboolean	initialized = false;
 static qboolean	enabled = false;
-static qboolean playLooping = false;
+static volatile qboolean playLooping = false;
 static float	cdvolume;
 static byte 	remap[100];
 static byte		cdrom;
-static byte		playTrack;
+static volatile byte playTrack;
 static byte		maxTrack;
 
 static LPDIRECTSOUNDBUFFER pDSBufCD;
@@ -165,7 +165,7 @@ static qboolean PlayCallback(struct ThreadArgList_t *playData, char *ptr, DWORD 
 	return PaintSoundOGG(playData, ptr, len);
 }
 
-#define BUFFER_PARTS 4
+#define BUFFER_PARTS 8
 
 static void PlayingThreadProc(void *arglist)
 {
@@ -179,6 +179,8 @@ static void PlayingThreadProc(void *arglist)
 	DWORD dummy, fillpart;
 	DWORD part_size;
 	HRESULT hr;
+	qboolean more_data;
+	qboolean trackPlayedToEnd = false;
 
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
@@ -203,11 +205,13 @@ static void PlayingThreadProc(void *arglist)
 	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, BUFFER_PARTS, notifies);
 
 	pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER);
+	
 
 	if (!PlayCallback(tal, ptr, (BUFFER_PARTS-1)*part_size))
 		SetEvent(cdStopEvent);
 
 	pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
+
 	pDSBufCD->lpVtbl->SetCurrentPosition(pDSBufCD, 0);
 	pDSBufCD->lpVtbl->Play(pDSBufCD, 0, 0, DSBPLAY_LOOPING);
 
@@ -217,19 +221,22 @@ static void PlayingThreadProc(void *arglist)
 		if (fillpart >= WAIT_OBJECT_0 && fillpart < WAIT_OBJECT_0 + BUFFER_PARTS)
 		{
 			fillpart = (fillpart - WAIT_OBJECT_0 + BUFFER_PARTS - 1) % BUFFER_PARTS;
-			if (pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0) == DSERR_BUFFERLOST)
+			hr = pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0);
+			if (hr == DSERR_BUFFERLOST)
 			{
 				pDSBufCD->lpVtbl->Restore(pDSBufCD);
 				pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0);
 			}
-			if (!PlayCallback(tal, ptr, part_size))
+			more_data = PlayCallback(tal, ptr, part_size);
+			pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
+			if (!more_data)
 			{
 				endevents[0] = events[fillpart];
 				endevents[1] = cdStopEvent;
-				WaitForMultipleObjects(2, endevents, FALSE, 2000);
+				if (WaitForMultipleObjects(2, endevents, FALSE, 2000) == WAIT_OBJECT_0)
+					trackPlayedToEnd = true;
 				break;
 			}
-			pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
 		}
 		else
 			break;
@@ -239,22 +246,16 @@ static void PlayingThreadProc(void *arglist)
 	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, 0, NULL);
 	for (i=0; i<BUFFER_PARTS; i++)
 		CloseHandle(events[i]);
-
-	SetEvent(cdPlayingFinishedEvent);
 	
 	CloseOGG(tal);
-	/*
-	//!TODO: 
-	when track finishes, execute this:
-		if (playing)
-		{
-			playing = false;
-			if (playLooping)
-				CDAudio_Play(playTrack, true);
-		}
-	*/
 
+	playing = false;
 	free(arglist);
+
+	SetEvent(cdPlayingFinishedEvent);
+
+	if (trackPlayedToEnd && playLooping)
+		CDAudio_Play(playTrack, true);	
 }
 
 void CDAudio_Play(byte track, qboolean looping)
@@ -298,14 +299,14 @@ void CDAudio_Play(byte track, qboolean looping)
 		return;
 	}
 
-	_beginthread(PlayingThreadProc, 0, tal);
-
 	playLooping = looping;
 	playTrack = track;
 	playing = true;
 
 	// force volume update
 	cdvolume = -1;
+
+	_beginthread(PlayingThreadProc, 0, tal);
 }
 
 
