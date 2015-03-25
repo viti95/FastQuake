@@ -182,8 +182,6 @@ static void PlayingThreadProc(void *arglist)
 	qboolean more_data;
 	qboolean trackPlayedToEnd = false;
 
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
-
 	CDAudio_WaitForFinish();
 	ResetEvent(cdPlayingFinishedEvent);
 	ResetEvent(cdStopEvent);
@@ -260,6 +258,7 @@ static void PlayingThreadProc(void *arglist)
 
 void CDAudio_Play(byte track, qboolean looping)
 {
+	HANDLE playingThread;
 	char filename[MAX_PATH];
 	struct ThreadArgList_t *tal;
 
@@ -306,7 +305,9 @@ void CDAudio_Play(byte track, qboolean looping)
 	// force volume update
 	cdvolume = -1;
 
-	_beginthread(PlayingThreadProc, 0, tal);
+	playingThread = (HANDLE)_beginthreadex(NULL, 0, PlayingThreadProc, tal, CREATE_SUSPENDED, NULL);
+	SetThreadPriority(playingThread, THREAD_PRIORITY_TIME_CRITICAL);
+	ResumeThread(playingThread);
 }
 
 
