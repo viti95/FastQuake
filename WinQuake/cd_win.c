@@ -155,6 +155,11 @@ static int CDAudio_GetAudioDiskInfo(void)
 		char filename[MAX_PATH];
 		sprintf(filename, "%s\\Track%03d.ogg", com_gamedir, i);
 		f = fopen(filename, "rb");
+		if (!f)
+		{
+			sprintf(filename, "%s\\sound\\cdtracks\\Track%03d.ogg", com_gamedir, i);
+			f = fopen(filename, "rb");
+		}
 		if (f)
 		{
 			maxTrack = i;
@@ -319,8 +324,12 @@ void CDAudio_Play(byte track, qboolean looping)
 	sprintf(filename, "%s\\Track%03d.ogg", com_gamedir, track);
 	if (!OpenOGG(filename, tal))
 	{
-		Con_DPrintf("CDAudio: Cannot open Vorbis file \"%s\"", filename);
-		return;
+		sprintf(filename, "%s\\sound\\cdtracks\\Track%03d.ogg", com_gamedir, track);
+		if (!OpenOGG(filename, tal))
+		{
+			Con_DPrintf("CDAudio: Cannot open Vorbis file \"%s\"", filename);
+			return;
+		}
 	}
 
 	playLooping = looping;
