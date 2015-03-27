@@ -5,15 +5,12 @@
 /WinQuake/Debug
 /WinQuake/GL Debug
 /WinQuake/GL Release
-/WinQuake/ID1
 /WinQuake/Release
-/WinQuake/*.user
-/WinQuake/debug_gl
-/WinQuake/release_gl
+*.user
+*.ncb
+*.suo
 /gas2masm/Debug
 /gas2masm/GL Debug
 /gas2masm/GL Release
 /gas2masm/Release
-/gas2masm/*.user
-*.suo
-*.ncb
+/WinQuake/ID1
