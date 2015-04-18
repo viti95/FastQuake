@@ -2,6 +2,30 @@
 #include "winquake.h"
 #include "fake_mgl.h"
 
+void *  FakeMGL_getSurface(FakeMGLDC *dc)
+{
+	if (!dc)
+		return NULL;
+	else
+		return dc->mgldc->surface;
+}
+
+int     FakeMGL_getMaxPage(FakeMGLDC *dc)
+{
+	if (!dc)
+		return 0;
+	else
+		return dc->mgldc->mi.maxPage;
+}
+
+int     FakeMGL_getBytesPerLine(FakeMGLDC *dc)
+{
+	if (!dc)
+		return 0;
+	else
+		return dc->mgldc->mi.bytesPerLine;
+}
+
 void 	FakeMGL_exit(void)
 {
 	MGL_exit();
@@ -72,15 +96,23 @@ bool	FakeMGL_initWindowed()
 	return MGL_initWindowed("");
 }
 
+FakeMGL_suspend_cb_t fakeStaveState;
 
-void	FakeMGL_setSuspendAppCallback(MGL_suspend_cb_t staveState)
+int wrapStaveState(MGLDC *dc,m_int flags)
+{
+	return fakeStaveState(flags);
+}
+
+void	FakeMGL_setSuspendAppCallback(FakeMGL_suspend_cb_t staveState)
 {
 	/*---------------------------------------------------------------------------
 	* Set a fullscreen suspend application callback function. This is used in
 	* fullscreen video modes to allow switching back to the normal operating
 	* system graphical shell (such as Windows GDI, OS/2 PM etc).
 	*-------------------------------------------------------------------------*/
-	MGL_setSuspendAppCallback(staveState);
+
+	fakeStaveState = staveState;
+	MGL_setSuspendAppCallback(wrapStaveState);
 }
 
 
@@ -99,52 +131,75 @@ m_int	FakeMGL_availablePages(m_int mode)
 	return MGL_availablePages(mode);
 }
 
-
-MGLDC	* FakeMGL_createDisplayDC(m_int numBuffers)
+static FakeMGLDC * makeFakeDC(MGLDC *realDC)
 {
-	return MGL_createDisplayDC(numBuffers);
+	if (realDC)
+	{
+		FakeMGLDC *fakedc = malloc(sizeof(FakeMGLDC));
+		fakedc->mgldc = realDC;
+		return fakedc;
+	}
+	else
+		return NULL;
+}
+
+FakeMGLDC	* FakeMGL_createDisplayDC(m_int numBuffers)
+{
+	return makeFakeDC(MGL_createDisplayDC(numBuffers));
 }
 
 
-m_int	FakeMGL_surfaceAccessType(MGLDC *dc)
+m_int	FakeMGL_surfaceAccessType(FakeMGLDC *dc)
 {
-	return MGL_surfaceAccessType(dc);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+	
+	return MGL_surfaceAccessType(mdc);
 }
 
 
-MGLDC *	FakeMGL_makeCurrentDC(MGLDC *dc)
+void FakeMGL_makeCurrentDC(FakeMGLDC *dc)
 {
-	return MGL_makeCurrentDC(dc);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_makeCurrentDC(mdc);
 }
 
 
-MGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize,m_int bitsPerPixel,pixel_format_t *pf)
+FakeMGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize,m_int bitsPerPixel,pixel_format_t *pf)
 {
-	return MGL_createMemoryDC(xSize, ySize, bitsPerPixel, pf);
+	return makeFakeDC(MGL_createMemoryDC(xSize, ySize, bitsPerPixel, pf));
 }
 
 
-m_int 	FakeMGL_sizex(MGLDC *dc)
+m_int 	FakeMGL_sizex(FakeMGLDC *dc)
 {
-	return MGL_sizex(dc);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	return MGL_sizex(mdc);
 }
 
 
-m_int 	FakeMGL_sizey(MGLDC *dc)
+m_int 	FakeMGL_sizey(FakeMGLDC *dc)
 {
-	return MGL_sizey(dc);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	return MGL_sizey(mdc);
 }
 
 
-void	FakeMGL_setActivePage(MGLDC *dc,m_int page)
+void	FakeMGL_setActivePage(FakeMGLDC *dc,m_int page)
 {
-	MGL_setActivePage(dc, page);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_setActivePage(mdc, page);
 }
 
 
-void	FakeMGL_setVisualPage(MGLDC *dc,m_int page,m_int waitVRT)
+void	FakeMGL_setVisualPage(FakeMGLDC *dc,m_int page,m_int waitVRT)
 {
-	MGL_setVisualPage(dc, page, waitVRT);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_setVisualPage(mdc, page, waitVRT);
 }
 
 
@@ -160,9 +215,16 @@ const char * FakeMGL_modeDriverName(m_int mode)
 }
 
 
-bool	FakeMGL_destroyDC(MGLDC *dc)
+bool	FakeMGL_destroyDC(FakeMGLDC *dc)
 {
-	return MGL_destroyDC(dc);
+	if (!dc)
+		return MGL_destroyDC(NULL);
+	else
+	{
+		bool result = MGL_destroyDC(dc->mgldc);
+		free(dc);
+		return result;
+	}
 }
 
 
@@ -185,9 +247,9 @@ void 	FakeMGL_registerFullScreenWindow(HWND hwndFullScreen)
 }
 
 
-MGLDC	* FakeMGL_createWindowedDC(MGL_HWND hwnd)
+FakeMGLDC	* FakeMGL_createWindowedDC(MGL_HWND hwnd)
 {
-	return MGL_createWindowedDC(hwnd);
+	return makeFakeDC(MGL_createWindowedDC(hwnd));
 }
 
 
@@ -203,37 +265,48 @@ void 	FakeMGL_endDirectAccess(void)
 }
 
 
-void 	FakeMGL_setPalette(MGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex)
+void 	FakeMGL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex)
 {
-	MGL_setPalette(dc, pal, numColors, startIndex);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_setPalette(mdc, pal, numColors, startIndex);
 }
 
 
-void	FakeMGL_realizePalette(MGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
+void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
 {
-	MGL_realizePalette(dc, numColors, startIndex, waitVRT);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_realizePalette(mdc, numColors, startIndex, waitVRT);
 }
 
 
-void 	FakeMGL_stretchBltCoord(MGLDC *dst,MGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int dstRight,m_int dstBottom)
+void 	FakeMGL_stretchBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int dstRight,m_int dstBottom)
 {
-	MGL_stretchBltCoord(dst, src, left, top, right, bottom, dstLeft, dstTop, dstRight, dstBottom);
+	MGLDC *mdst = dst ? dst->mgldc : NULL;
+	MGLDC *msrc = src ? src->mgldc : NULL;
+	MGL_stretchBltCoord(mdst, msrc, left, top, right, bottom, dstLeft, dstTop, dstRight, dstBottom);
 }
 
 
-void 	FakeMGL_bitBltCoord(MGLDC *dst,MGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
+void 	FakeMGL_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
 {
-	MGL_bitBltCoord(dst, src, left, top, right, bottom, dstLeft, dstTop, op);
+	MGLDC *mdst = dst ? dst->mgldc : NULL;
+	MGLDC *msrc = src ? src->mgldc : NULL;
+
+	MGL_bitBltCoord(mdst, msrc, left, top, right, bottom, dstLeft, dstTop, op);
 }
 
 
-bool	FakeMGL_setWinDC(MGLDC *dc,MGL_HDC hdc)
+bool	FakeMGL_setWinDC(FakeMGLDC *dc,MGL_HDC hdc)
 {
-	return MGL_setWinDC(dc, hdc);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	return MGL_setWinDC(mdc, hdc);
 }
 
 
-void	FakeMGL_appActivate(MGLDC *winDC,bool active)
+void	FakeMGL_appActivate(FakeMGLDC *winDC,bool active)
 {
 	/* Let the MGL know when your application is being activated or deactivated.
 	* This function only needs to be called when running in Windowed modes and
@@ -244,12 +317,16 @@ void	FakeMGL_appActivate(MGLDC *winDC,bool active)
 	* MGL Windowed DC and a flag to indicate whether the app is in the background
 	* or not.
 	*/
-	MGL_appActivate(winDC, active);
+	MGLDC *mwinDC = winDC ? winDC->mgldc : NULL;
+
+	MGL_appActivate(mwinDC, active);
 }
 
 
-bool	FakeMGL_activatePalette(MGLDC *dc,bool unrealize)
+bool	FakeMGL_activatePalette(FakeMGLDC *dc,bool unrealize)
 {
 	/* Activate the WindowDC's palette */
-	return MGL_activatePalette(dc, unrealize);
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	return MGL_activatePalette(mdc, unrealize);
 }
