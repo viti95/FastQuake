@@ -103,7 +103,7 @@ unsigned short	d_8to16table[256];
 unsigned	d_8to24table[256];
 
 int     driver = grDETECT,mode;
-MGLDC	*mgldc = NULL,*memdc = NULL,*dibdc = NULL,*windc = NULL;
+FakeMGLDC	*mgldc = NULL,*memdc = NULL,*dibdc = NULL,*windc = NULL;
 
 typedef struct {
 	modestate_t	type;
@@ -270,7 +270,7 @@ void initFatalError(void)
 }
 
 
-int VID_Suspend (MGLDC *dc,m_int flags)
+int VID_Suspend (m_int flags)
 {
 
 	if (flags & MGL_DEACTIVATE)
@@ -450,7 +450,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 }
 
 
-MGLDC *createDisplayDC(int forcemem)
+FakeMGLDC *createDisplayDC(int forcemem)
 /****************************************************************************
 *
 * Function:     createDisplayDC
@@ -464,7 +464,7 @@ MGLDC *createDisplayDC(int forcemem)
 *
 ****************************************************************************/
 {
-    MGLDC			*dc;
+    FakeMGLDC			*dc;
 	pixel_format_t	pf;
 	int				npages;
 
@@ -488,7 +488,7 @@ MGLDC *createDisplayDC(int forcemem)
 	if ((dc = FakeMGL_createDisplayDC(npages)) == NULL)
 		return NULL;
 
-	if (!forcemem && dc->mi.maxPage > 0)
+	if (!forcemem && FakeMGL_getMaxPage(dc) > 0)
 	{
 		FakeMGL_makeCurrentDC(dc);
 		memdc = NULL;
@@ -507,7 +507,7 @@ MGLDC *createDisplayDC(int forcemem)
 	}
 	else
 	{
-		vid.numpages = dc->mi.maxPage + 1;
+		vid.numpages = FakeMGL_getMaxPage(dc) + 1;
 
 		if (vid.numpages > 1)
 		{
@@ -934,8 +934,8 @@ qboolean VID_SetWindowedMode (int modenum)
 
 	FakeMGL_makeCurrentDC(dibdc);
 
-	vid.buffer = vid.conbuffer = vid.direct = dibdc->surface;
-	vid.rowbytes = vid.conrowbytes = dibdc->mi.bytesPerLine;
+	vid.buffer = vid.conbuffer = vid.direct = FakeMGL_getSurface(dibdc);
+	vid.rowbytes = vid.conrowbytes = FakeMGL_getBytesPerLine(dibdc);
 	vid.numpages = 1;
 	vid.maxwarpwidth = WARP_WIDTH;
 	vid.maxwarpheight = WARP_HEIGHT;
@@ -1201,14 +1201,14 @@ void VID_LockBuffer (void)
 	if (memdc)
 	{
 		// Update surface pointer for linear access modes
-		vid.buffer = vid.conbuffer = vid.direct = memdc->surface;
-		vid.rowbytes = vid.conrowbytes = memdc->mi.bytesPerLine;
+		vid.buffer = vid.conbuffer = vid.direct = FakeMGL_getSurface(memdc);
+		vid.rowbytes = vid.conrowbytes = FakeMGL_getBytesPerLine(memdc);
 	}
 	else if (mgldc)
 	{
 		// Update surface pointer for linear access modes
-		vid.buffer = vid.conbuffer = vid.direct = mgldc->surface;
-		vid.rowbytes = vid.conrowbytes = mgldc->mi.bytesPerLine;
+		vid.buffer = vid.conbuffer = vid.direct = FakeMGL_getSurface(mgldc);
+		vid.rowbytes = vid.conrowbytes = FakeMGL_getBytesPerLine(mgldc);
 	}
 
 	if (r_dowarp)
@@ -1902,6 +1902,9 @@ void D_BeginDirectRect (int x, int y, byte *pbitmap, int width, int height)
 	}
 	else
 	{
+		byte *surface;
+		int bytesPerLine;
+
 	// unlock if locked
 		if (lockcount > 0)
 			FakeMGL_endDirectAccess();
@@ -1912,17 +1915,20 @@ void D_BeginDirectRect (int x, int y, byte *pbitmap, int width, int height)
 	// lock the screen
 		FakeMGL_beginDirectAccess ();
 
+		surface = FakeMGL_getSurface(mgldc);
+		bytesPerLine = FakeMGL_getBytesPerLine(mgldc);
+
 	// save from and draw to screen
 		for (i=0 ; i<(height << repshift) ; i += reps)
 		{
 			for (j=0 ; j<reps ; j++)
 			{
 				memcpy (&backingbuf[(i + j) * 24],
-						(byte *)mgldc->surface + x +
-						 ((y << repshift) + i + j) * mgldc->mi.bytesPerLine,
+						surface + x +
+						 ((y << repshift) + i + j) * bytesPerLine,
 						width);
-				memcpy ((byte *)mgldc->surface + x +
-						 ((y << repshift) + i + j) * mgldc->mi.bytesPerLine,
+				memcpy (surface + x +
+						 ((y << repshift) + i + j) * bytesPerLine,
 						&pbitmap[(i >> repshift) * width],
 						width);
 			}
@@ -1994,6 +2000,9 @@ void D_EndDirectRect (int x, int y, int width, int height)
 	}
 	else
 	{
+		byte *surface;
+		int bytesPerLine;
+
 	// unlock if locked
 		if (lockcount > 0)
 			FakeMGL_endDirectAccess();
@@ -2004,13 +2013,16 @@ void D_EndDirectRect (int x, int y, int width, int height)
 	// lock the screen
 		FakeMGL_beginDirectAccess ();
 
+		surface = FakeMGL_getSurface(mgldc);
+		bytesPerLine = FakeMGL_getBytesPerLine(mgldc);
+
 	// restore to the screen
 		for (i=0 ; i<(height << repshift) ; i += reps)
 		{
 			for (j=0 ; j<reps ; j++)
 			{
-				memcpy ((byte *)mgldc->surface + x +
-						 ((y << repshift) + i + j) * mgldc->mi.bytesPerLine,
+				memcpy (surface + x +
+						 ((y << repshift) + i + j) * bytesPerLine,
 						&backingbuf[(i + j) * 24],
 						width);
 			}
