@@ -1272,27 +1272,17 @@ void	VID_SetPalette (unsigned char *palette)
 			pal[i].blue = palette[i*3+2];
 		}
 
-		if (DDActive)
-		{
-			if (!mgldca)
-				return;
+		if (!mgldca)
+			return;
 
-			FakeMGL_setPalette(mgldca,pal,256,0);
-			FakeMGL_realizePalette(mgldca,256,0,false);
-			if (mgldcb)
-				FakeMGL_setPalette(mgldcb,pal,256,0);
-		}
-		else
+		FakeMGL_setPalette(mgldca, pal, 256, 0);
+		FakeMGL_realizePalette(mgldca, 256, 0, false);
+		if (mgldcb)
 		{
-			if (!mgldca)
-				return;
-
-			FakeMGL_setPalette(mgldca,pal,256,0);
-			FakeMGL_realizePalette(mgldca,256,0,false);
-			if (mgldcb)
+			FakeMGL_setPalette(mgldcb, pal, 256, 0);
+			if (!DDActive)
 			{
-				FakeMGL_setPalette(mgldcb,pal,256,0);
-				FakeMGL_realizePalette(mgldcb,256,0,false);
+				FakeMGL_realizePalette(mgldcb, 256, 0, false);
 			}
 		}
 	}
