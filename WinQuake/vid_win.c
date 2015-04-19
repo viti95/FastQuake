@@ -267,15 +267,12 @@ void initFatalError(void)
 
 int VID_Suspend (m_int flags)
 {
-
 	if (flags & MGL_DEACTIVATE)
 	{
-		IN_RestoreOriginalMouseState ();
 		block_drawing = true;	// so we don't try to draw while switched away
 	}
 	else /* if (flags & MGL_REACTIVATE) */
 	{
-		IN_SetQuakeMouseState ();
 		block_drawing = false;
 	}
 	
@@ -1904,18 +1901,6 @@ LONG WINAPI MainWndProc (
 			fActive = LOWORD(wParam);
 			fMinimized = (BOOL) HIWORD(wParam);
 		
-			if (!fActive && modestate == MS_FULLSCREEN)
-			{
-				CDAudio_Pause ();
-				in_mode_set = true;
-			}
-			if (fActive && modestate == MS_FULLSCREEN)
-			{
-				CDAudio_Resume ();
-				vid.recalc_refdef = 1;
-				in_mode_set = false;
-			}
-
 			AppActivate(!(fActive == WA_INACTIVE), fMinimized);
 
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
@@ -1927,6 +1912,23 @@ LONG WINAPI MainWndProc (
 					FakeMGL_activatePalette(mgldca,true);
 
 				VID_SetPalette(vid_curpal);
+			}
+
+			if (modestate == MS_FULLSCREEN)
+			{
+				if (!fActive)
+				{
+					IN_RestoreOriginalMouseState ();
+					CDAudio_Pause ();
+					in_mode_set = true;
+				}
+				else if (!fMinimized)
+				{
+					IN_SetQuakeMouseState ();
+					CDAudio_Resume ();
+					vid.recalc_refdef = 1;
+					in_mode_set = false;
+				}
 			}
 
 			break;
