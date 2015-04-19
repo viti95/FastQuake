@@ -2,28 +2,12 @@
 #include "winquake.h"
 #include "fake_mgl.h"
 
-void *  FakeMGL_getSurface(FakeMGLDC *dc)
-{
-	if (!dc)
-		return NULL;
-	else
-		return dc->mgldc->surface;
-}
-
 int     FakeMGL_getMaxPage(FakeMGLDC *dc)
 {
 	if (!dc)
 		return 0;
 	else
 		return dc->mgldc->mi.maxPage;
-}
-
-int     FakeMGL_getBytesPerLine(FakeMGLDC *dc)
-{
-	if (!dc)
-		return 0;
-	else
-		return dc->mgldc->mi.bytesPerLine;
 }
 
 void 	FakeMGL_exit(void)
@@ -253,13 +237,20 @@ FakeMGLDC	* FakeMGL_createWindowedDC(MGL_HWND hwnd)
 }
 
 
-void 	FakeMGL_beginDirectAccess(void)
+void 	FakeMGL_beginDirectAccess(FakeMGLDC *dc, void **surface, int *bytesPerLine)
 {
 	MGL_beginDirectAccess();
+	if (dc)
+	{
+		if (surface)
+			*surface = dc->mgldc->surface;
+		if (bytesPerLine)
+			*bytesPerLine = dc->mgldc->mi.bytesPerLine;
+	}
 }
 
 
-void 	FakeMGL_endDirectAccess(void)
+void 	FakeMGL_endDirectAccess()
 {
 	MGL_endDirectAccess();
 }

@@ -1193,23 +1193,12 @@ void VID_LockBuffer (void)
 	if (lockcount > 1)
 		return;
 
-	FakeMGL_beginDirectAccess();
-
 	if (dibdc)
-	{
-		surface = FakeMGL_getSurface(dibdc);
-		bytesPerLine = FakeMGL_getBytesPerLine(dibdc);
-	}
+		FakeMGL_beginDirectAccess(dibdc, &surface, &bytesPerLine);
 	if (memdc)
-	{
-		surface = FakeMGL_getSurface(memdc);
-		bytesPerLine = FakeMGL_getBytesPerLine(memdc);
-	}
+		FakeMGL_beginDirectAccess(memdc, &surface, &bytesPerLine);
 	else if (mgldc)
-	{
-		surface = FakeMGL_getSurface(mgldc);
-		bytesPerLine = FakeMGL_getBytesPerLine(mgldc);
-	}
+		FakeMGL_beginDirectAccess(mgldc, &surface, &bytesPerLine);
 
 	// Update surface pointer for linear access modes
 	vid.buffer = vid.conbuffer = vid.direct = surface;

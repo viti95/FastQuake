@@ -5,9 +5,7 @@ typedef struct
 
 typedef int (*FakeMGL_suspend_cb_t)(m_int flags);
 
-void *  FakeMGL_getSurface(FakeMGLDC *dc);
 int     FakeMGL_getMaxPage(FakeMGLDC *dc);
-int     FakeMGL_getBytesPerLine(FakeMGLDC *dc);
 
 void 	FakeMGL_exit(void);
 void	FakeMGL_fatalError(const char *msg);
@@ -36,8 +34,8 @@ const char * FakeMGL_modeDriverName(m_int mode);
 bool	FakeMGL_destroyDC(FakeMGLDC *dc);
 void 	FakeMGL_registerFullScreenWindow(HWND hwndFullScreen);
 FakeMGLDC	* FakeMGL_createWindowedDC(MGL_HWND hwnd);
-void 	ASMAPI MGL_beginDirectAccess(void);
-void 	ASMAPI MGL_endDirectAccess(void);
+void 	FakeMGL_beginDirectAccess(FakeMGLDC *dc, void **surface, int *bytesPerLine);
+void 	FakeMGL_endDirectAccess();
 void 	FakeMGL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex);
 void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT);
 void 	FakeMGL_stretchBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int dstRight,m_int dstBottom);
