@@ -271,22 +271,11 @@ int VID_Suspend (m_int flags)
 	if (flags & MGL_DEACTIVATE)
 	{
 		IN_RestoreOriginalMouseState ();
-		CDAudio_Pause ();
-
-	// keep WM_PAINT from trying to redraw
-		in_mode_set = true;
-
 		block_drawing = true;	// so we don't try to draw while switched away
 	}
 	else /* if (flags & MGL_REACTIVATE) */
 	{
 		IN_SetQuakeMouseState ();
-		CDAudio_Resume ();
-
-		in_mode_set = false;
-
-		vid.recalc_refdef = 1;
-
 		block_drawing = false;
 	}
 	
@@ -1914,6 +1903,19 @@ LONG WINAPI MainWndProc (
 		case WM_ACTIVATE:
 			fActive = LOWORD(wParam);
 			fMinimized = (BOOL) HIWORD(wParam);
+		
+			if (!fActive && modestate == MS_FULLSCREEN)
+			{
+				CDAudio_Pause ();
+				in_mode_set = true;
+			}
+			if (fActive && modestate == MS_FULLSCREEN)
+			{
+				CDAudio_Resume ();
+				vid.recalc_refdef = 1;
+				in_mode_set = false;
+			}
+
 			AppActivate(!(fActive == WA_INACTIVE), fMinimized);
 
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
