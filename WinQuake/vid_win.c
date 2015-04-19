@@ -128,8 +128,6 @@ int		waitVRT = true;			// True to wait for retrace on flip
 
 static vmode_t	badmode;
 
-static byte	backingbuf[48*24];
-
 void VID_MenuDraw (void);
 void VID_MenuKey (int key);
 
@@ -1856,97 +1854,6 @@ D_BeginDirectRect
 */
 void D_BeginDirectRect (int x, int y, byte *pbitmap, int width, int height)
 {
-	int		i, j, reps, repshift;
-	vrect_t	rect;
-
-	if (!vid_initialized)
-		return;
-
-	if (vid.aspect > 1.5)
-	{
-		reps = 2;
-		repshift = 1;
-	}
-	else
-	{
-		reps = 1;
-		repshift = 0;
-	}
-
-	if (vid.numpages == 1)
-	{
-		VID_LockBuffer ();
-
-		if (!vid.direct)
-			Sys_Error ("NULL vid.direct pointer");
-
-		for (i=0 ; i<(height << repshift) ; i += reps)
-		{
-			for (j=0 ; j<reps ; j++)
-			{
-				memcpy (&backingbuf[(i + j) * 24],
-						vid.direct + x + ((y << repshift) + i + j) * vid.rowbytes,
-						width);
-				memcpy (vid.direct + x + ((y << repshift) + i + j) * vid.rowbytes,
-						&pbitmap[(i >> repshift) * width],
-						width);
-			}
-		}
-
-		VID_UnlockBuffer ();
-
-		rect.x = x;
-		rect.y = y;
-		rect.width = width;
-		rect.height = height << repshift;
-		rect.pnext = NULL;
-
-		FlipScreen (&rect);
-	}
-	else
-	{
-		byte *surface;
-		int bytesPerLine;
-
-	// unlock if locked
-		if (lockcount > 0)
-			FakeMGL_endDirectAccess();
-
-	// set the active page to the displayed page
-		FakeMGL_setActivePage (mgldc, vPage);
-
-	// lock the screen
-		FakeMGL_beginDirectAccess ();
-
-		surface = FakeMGL_getSurface(mgldc);
-		bytesPerLine = FakeMGL_getBytesPerLine(mgldc);
-
-	// save from and draw to screen
-		for (i=0 ; i<(height << repshift) ; i += reps)
-		{
-			for (j=0 ; j<reps ; j++)
-			{
-				memcpy (&backingbuf[(i + j) * 24],
-						surface + x +
-						 ((y << repshift) + i + j) * bytesPerLine,
-						width);
-				memcpy (surface + x +
-						 ((y << repshift) + i + j) * bytesPerLine,
-						&pbitmap[(i >> repshift) * width],
-						width);
-			}
-		}
-
-	// unlock the screen
-		FakeMGL_endDirectAccess ();
-
-	// restore the original active page
-		FakeMGL_setActivePage (mgldc, aPage);
-
-	// relock the screen if it was locked
-		if (lockcount > 0)
-			FakeMGL_beginDirectAccess();
-	}
 }
 
 
@@ -1957,90 +1864,6 @@ D_EndDirectRect
 */
 void D_EndDirectRect (int x, int y, int width, int height)
 {
-	int		i, j, reps, repshift;
-	vrect_t	rect;
-
-	if (!vid_initialized)
-		return;
-
-	if (vid.aspect > 1.5)
-	{
-		reps = 2;
-		repshift = 1;
-	}
-	else
-	{
-		reps = 1;
-		repshift = 0;
-	}
-
-	if (vid.numpages == 1)
-	{
-		VID_LockBuffer ();
-
-		if (!vid.direct)
-			Sys_Error ("NULL vid.direct pointer");
-
-		for (i=0 ; i<(height << repshift) ; i += reps)
-		{
-			for (j=0 ; j<reps ; j++)
-			{
-				memcpy (vid.direct + x + ((y << repshift) + i + j) * vid.rowbytes,
-						&backingbuf[(i + j) * 24],
-						width);
-			}
-		}
-
-		VID_UnlockBuffer ();
-
-		rect.x = x;
-		rect.y = y;
-		rect.width = width;
-		rect.height = height << repshift;
-		rect.pnext = NULL;
-
-		FlipScreen (&rect);
-	}
-	else
-	{
-		byte *surface;
-		int bytesPerLine;
-
-	// unlock if locked
-		if (lockcount > 0)
-			FakeMGL_endDirectAccess();
-
-	// set the active page to the displayed page
-		FakeMGL_setActivePage (mgldc, vPage);
-
-	// lock the screen
-		FakeMGL_beginDirectAccess ();
-
-		surface = FakeMGL_getSurface(mgldc);
-		bytesPerLine = FakeMGL_getBytesPerLine(mgldc);
-
-	// restore to the screen
-		for (i=0 ; i<(height << repshift) ; i += reps)
-		{
-			for (j=0 ; j<reps ; j++)
-			{
-				memcpy (surface + x +
-						 ((y << repshift) + i + j) * bytesPerLine,
-						&backingbuf[(i + j) * 24],
-						width);
-			}
-		}
-
-	// unlock the screen
-		FakeMGL_endDirectAccess ();
-
-	// restore the original active page
-		FakeMGL_setActivePage (mgldc, aPage);
-
-	// relock the screen if it was locked
-		if (lockcount > 0)
-			FakeMGL_beginDirectAccess();
-	}
 }
 
 
