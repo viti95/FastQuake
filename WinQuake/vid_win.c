@@ -75,7 +75,6 @@ cvar_t		vid_config_y = {"vid_config_y","600", true};
 cvar_t		_windowed_mouse = {"_windowed_mouse","0", true};
 cvar_t		vid_fullscreen_mode = {"vid_fullscreen_mode","3", true};
 cvar_t		vid_windowed_mode = {"vid_windowed_mode","0", true};
-cvar_t		block_switch = {"block_switch","0", true};
 cvar_t		vid_window_x = {"vid_window_x", "0", true};
 cvar_t		vid_window_y = {"vid_window_y", "0", true};
 
@@ -271,12 +270,6 @@ int VID_Suspend (m_int flags)
 
 	if (flags & MGL_DEACTIVATE)
 	{
-	// FIXME: this doesn't currently work on NT
-		if (block_switch.value && !WinNT)
-		{
-			return MGL_NO_DEACTIVATE;
-		}
-
 		IN_RestoreOriginalMouseState ();
 		CDAudio_Pause ();
 
@@ -1355,7 +1348,6 @@ void	VID_Init (unsigned char *palette)
 	Cvar_RegisterVariable (&_windowed_mouse);
 	Cvar_RegisterVariable (&vid_fullscreen_mode);
 	Cvar_RegisterVariable (&vid_windowed_mode);
-	Cvar_RegisterVariable (&block_switch);
 	Cvar_RegisterVariable (&vid_window_x);
 	Cvar_RegisterVariable (&vid_window_y);
 
