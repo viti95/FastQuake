@@ -272,14 +272,6 @@ void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int
 }
 
 
-void 	FakeMGL_stretchBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int dstRight,m_int dstBottom)
-{
-	MGLDC *mdst = dst ? dst->mgldc : NULL;
-	MGLDC *msrc = src ? src->mgldc : NULL;
-	MGL_stretchBltCoord(mdst, msrc, left, top, right, bottom, dstLeft, dstTop, dstRight, dstBottom);
-}
-
-
 void 	FakeMGL_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
 {
 	MGLDC *mdst = dst ? dst->mgldc : NULL;
