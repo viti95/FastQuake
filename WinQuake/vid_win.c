@@ -768,35 +768,14 @@ char *VID_GetExtModeDescription (int mode)
 }
 
 
-void DestroyDIBWindow (void)
+void DestroyMGLDC (void)
 {
-
-	if (modestate == MS_WINDOWED)
-	{
-	// destroy the associated MGL DC's; the window gets reused
-		if (mgldca)
-			FakeMGL_destroyDC(mgldca);
-		if (mgldcb)
-			FakeMGL_destroyDC(mgldcb);
-		mgldca = mgldcb = NULL;
-	}
+	if (mgldca)
+		FakeMGL_destroyDC(mgldca);
+	if (mgldcb)
+		FakeMGL_destroyDC(mgldcb);
+	mgldca = mgldcb = NULL;
 }
-
-
-void DestroyFullscreenWindow (void)
-{
-
-	if (modestate == MS_FULLSCREEN)
-	{
-	// destroy the existing fullscreen mode and DC's
-		if (mgldca)
-			FakeMGL_destroyDC (mgldca);
-		if (mgldcb)
-			FakeMGL_destroyDC (mgldcb);
-		mgldca = mgldcb = NULL;
-	}
-}
-
 
 qboolean VID_SetWindowedMode (int modenum)
 {
@@ -822,7 +801,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	DDActive = 0;
 	lastmodestate = modestate;
 
-	DestroyFullscreenWindow ();
+	DestroyMGLDC ();
 
 // KJB: Signal to the MGL that we are going back to windowed mode
 	if (!FakeMGL_changeDisplayMode(grWINDOWED))
@@ -950,7 +929,7 @@ qboolean VID_SetFullscreenMode (int modenum)
 
 	DDActive = 1;
 
-	DestroyDIBWindow ();
+	DestroyMGLDC ();
 
 	mode = modelist[modenum].modenum;
 
@@ -1608,8 +1587,7 @@ void	VID_Shutdown (void)
 		PostMessage (HWND_BROADCAST, WM_SYSCOLORCHANGE, (WPARAM)0, (LPARAM)0);
 
 		AppActivate(false, false);
-		DestroyDIBWindow ();
-		DestroyFullscreenWindow ();
+		DestroyMGLDC ();
 
 		if (hwnd_dialog)
 			DestroyWindow (hwnd_dialog);
