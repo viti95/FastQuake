@@ -38,7 +38,6 @@ void 	FakeMGL_beginDirectAccess(FakeMGLDC *dc, void **surface, int *bytesPerLine
 void 	FakeMGL_endDirectAccess();
 void 	FakeMGL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex);
 void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT);
-void 	FakeMGL_stretchBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int dstRight,m_int dstBottom);
 void 	FakeMGL_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op);
 bool	FakeMGL_setWinDC(FakeMGLDC *dc,MGL_HDC hdc);
 void	FakeMGL_appActivate(FakeMGLDC *winDC,bool active);

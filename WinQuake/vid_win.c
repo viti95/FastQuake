@@ -50,7 +50,7 @@ static int		firstupdate = 1;
 static qboolean	vid_initialized = false, vid_palettized;
 static int		lockcount;
 static qboolean	force_minimized, in_mode_set, force_mode_set;
-static int		vid_stretched, windowed_mouse;
+static int		windowed_mouse;
 static qboolean	palette_changed, syscolchg, vid_mode_set, hide_window, pal_is_nostatic;
 static HICON	hIcon;
 
@@ -72,7 +72,6 @@ cvar_t		vid_nopageflip = {"vid_nopageflip","0", true};
 cvar_t		_vid_wait_override = {"_vid_wait_override", "0", true};
 cvar_t		vid_config_x = {"vid_config_x","800", true};
 cvar_t		vid_config_y = {"vid_config_y","600", true};
-cvar_t		vid_stretch_by_2 = {"vid_stretch_by_2","1", true};
 cvar_t		_windowed_mouse = {"_windowed_mouse","0", true};
 cvar_t		vid_fullscreen_mode = {"vid_fullscreen_mode","3", true};
 cvar_t		vid_windowed_mode = {"vid_windowed_mode","0", true};
@@ -110,7 +109,6 @@ typedef struct {
 	int			width;
 	int			height;
 	int			modenum;
-	int			stretched;
 	int			dib;
 	int			fullscreen;
 	int			bpp;
@@ -328,7 +326,6 @@ void registerAllMemDrivers(void)
 void VID_InitMGLFull (HINSTANCE hInstance)
 {
 	int			i, xRes, yRes, bits, vMode, lowres, curmode, temp;
-	int			lowstretchedres, stretchedmode, lowstretched;
     uchar		*m;
 
 	// Initialise the MGL
@@ -340,12 +337,10 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 
 	if (m[0] != 0xFF)
 	{
-		lowres = lowstretchedres = 99999;
-		lowstretched = 0;
+		lowres = 99999;
 		curmode = 0;
 
-	// find the lowest-res mode, or a mode we can stretch up to and get
-	// lowest-res that way
+	// find the lowest-res mode
 		for (i = 0; m[i] != 0xFF; i++)
 		{
 			FakeMGL_modeResolution(m[i], &xRes, &yRes,&bits);
@@ -360,28 +355,12 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 					lowres = xRes;
 					mode = i;
 				}
-
-				if ((xRes < lowstretchedres) && ((xRes >> 1) >= 320))
-				{
-					lowstretchedres = xRes >> 1;
-					stretchedmode = i;
-				}
 			}
 
 			curmode++;
 		}
 
-	// if there's a mode we can stretch by 2 up to, thereby effectively getting
-	// a lower-res mode than the lowest-res real but still at least 320x200, that
-	// will be our default mode
-		if (lowstretchedres < lowres)
-		{
-			mode = stretchedmode;
-			lowres = lowstretchedres;
-			lowstretched = 1;
-		}
-
-	// build the mode list, leaving room for the low-res stretched mode, if any
+	// build the mode list
 		nummodes++;		// leave room for default mode
 
 		for (i = 0; m[i] != 0xFF; i++)
@@ -395,15 +374,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 			{
 				if (i == mode)
 				{
-					if (lowstretched)
-					{
-						stretchedmode = nummodes;
-						curmode = nummodes++;
-					}
-					else
-					{
-						curmode = MODE_FULLSCREEN_DEFAULT;
-					}
+					curmode = MODE_FULLSCREEN_DEFAULT;
 				}
 				else
 				{
@@ -415,23 +386,11 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 				modelist[curmode].height = yRes;
 				sprintf (modelist[curmode].modedesc, "%dx%d", xRes, yRes);
 				modelist[curmode].modenum = m[i];
-				modelist[curmode].stretched = 0;
 				modelist[curmode].dib = 0;
 				modelist[curmode].fullscreen = 1;
 				modelist[curmode].halfscreen = 0;
 				modelist[curmode].bpp = 8;
 			}
-		}
-
-		if (lowstretched)
-		{
-			modelist[MODE_FULLSCREEN_DEFAULT] = modelist[stretchedmode];
-			modelist[MODE_FULLSCREEN_DEFAULT].stretched = 1;
-			modelist[MODE_FULLSCREEN_DEFAULT].width >>= 1;
-			modelist[MODE_FULLSCREEN_DEFAULT].height >>= 1;
-			sprintf (modelist[MODE_FULLSCREEN_DEFAULT].modedesc, "%dx%d",
-					 modelist[MODE_FULLSCREEN_DEFAULT].width,
-					 modelist[MODE_FULLSCREEN_DEFAULT].height);
 		}
 
 		vid_default = MODE_FULLSCREEN_DEFAULT;
@@ -561,7 +520,6 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	modelist[0].height = 240;
 	strcpy (modelist[0].modedesc, "320x240");
 	modelist[0].modenum = MODE_WINDOWED;
-	modelist[0].stretched = 0;
 	modelist[0].dib = 1;
 	modelist[0].fullscreen = 0;
 	modelist[0].halfscreen = 0;
@@ -572,7 +530,6 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	modelist[1].height = 480;
 	strcpy (modelist[1].modedesc, "640x480");
 	modelist[1].modenum = MODE_WINDOWED + 1;
-	modelist[1].stretched = 1;
 	modelist[1].dib = 1;
 	modelist[1].fullscreen = 0;
 	modelist[1].halfscreen = 0;
@@ -583,27 +540,13 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	modelist[2].height = 600;
 	strcpy (modelist[2].modedesc, "800x600");
 	modelist[2].modenum = MODE_WINDOWED + 2;
-	modelist[2].stretched = 1;
 	modelist[2].dib = 1;
 	modelist[2].fullscreen = 0;
 	modelist[2].halfscreen = 0;
 	modelist[2].bpp = 8;
 
-// automatically stretch the default mode up if > 640x480 desktop resolution
-	hdc = GetDC(NULL);
-
-	if ((GetDeviceCaps(hdc, HORZRES) > 640) && !COM_CheckParm("-noautostretch"))
-	{
-		vid_default = MODE_WINDOWED + 1;
-	}
-	else
-	{
-		vid_default = MODE_WINDOWED;
-	}
-
-	windowed_default = vid_default;
-
-	ReleaseDC(NULL,hdc);
+	windowed_default = MODE_WINDOWED;
+	vid_default = windowed_default;
 
 	nummodes = 3;	// reserve space for windowed mode
 
@@ -639,35 +582,6 @@ vmode_t *VID_GetModePtr (int modenum)
 
 /*
 =================
-VID_CheckModedescFixup
-=================
-*/
-void VID_CheckModedescFixup (int mode)
-{
-	int		x, y, stretch;
-
-	if (mode == MODE_SETTABLE_WINDOW)
-	{
-		modelist[mode].stretched = (int)vid_stretch_by_2.value;
-		stretch = modelist[mode].stretched;
-
-		if (vid_config_x.value < (320 << stretch))
-			vid_config_x.value = 320 << stretch;
-
-		if (vid_config_y.value < (200 << stretch))
-			vid_config_y.value = 200 << stretch;
-
-		x = (int)vid_config_x.value;
-		y = (int)vid_config_y.value;
-		sprintf (modelist[mode].modedesc, "%dx%d", x, y);
-		modelist[mode].width = x;
-		modelist[mode].height = y;
-	}
-}
-
-
-/*
-=================
 VID_GetModeDescriptionMemCheck
 =================
 */
@@ -678,8 +592,6 @@ char *VID_GetModeDescriptionMemCheck (int mode)
 
 	if ((mode < 0) || (mode >= nummodes))
 		return NULL;
-
-	VID_CheckModedescFixup (mode);
 
 	pv = VID_GetModePtr (mode);
 	pinfo = pv->modedesc;
@@ -701,8 +613,6 @@ char *VID_GetModeDescription (int mode)
 	if ((mode < 0) || (mode >= nummodes))
 		return NULL;
 
-	VID_CheckModedescFixup (mode);
-
 	pv = VID_GetModePtr (mode);
 	pinfo = pv->modedesc;
 	return pinfo;
@@ -723,8 +633,6 @@ char *VID_GetModeDescription2 (int mode)
 
 	if ((mode < 0) || (mode >= nummodes))
 		return NULL;
-
-	VID_CheckModedescFixup (mode);
 
 	pv = VID_GetModePtr (mode);
 
@@ -750,8 +658,6 @@ char *VID_GetExtModeDescription (int mode)
 
 	if ((mode < 0) || (mode >= nummodes))
 		return NULL;
-
-	VID_CheckModedescFixup (mode);
 
 	pv = VID_GetModePtr (mode);
 	if (modelist[mode].type == MS_FULLSCREEN)
@@ -781,7 +687,6 @@ qboolean VID_SetWindowedMode (int modenum)
 {
 	HDC				hdc;
 	pixel_format_t	pf;
-	qboolean		stretched;
 	int				lastmodestate;
 	LONG			wlong;
 
@@ -796,8 +701,6 @@ qboolean VID_SetWindowedMode (int modenum)
 		windowed_mode_set;
 	}
 
-	VID_CheckModedescFixup (modenum);
-
 	DDActive = 0;
 	lastmodestate = modestate;
 
@@ -811,16 +714,9 @@ qboolean VID_SetWindowedMode (int modenum)
 
 	WindowRect.right = modelist[modenum].width;
 	WindowRect.bottom = modelist[modenum].height;
-	stretched = modelist[modenum].stretched;
-
+	
 	DIBWidth = modelist[modenum].width;
 	DIBHeight = modelist[modenum].height;
-
-	if (stretched)
-	{
-		DIBWidth >>= 1;
-		DIBHeight >>= 1;
-	}
 
 	WindowStyle = WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU |
 				  WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPSIBLINGS |
@@ -915,8 +811,6 @@ qboolean VID_SetWindowedMode (int modenum)
 	vid.aspect = ((float)vid.height / (float)vid.width) *
 				(320.0 / 240.0);
 
-	vid_stretched = stretched;
-
 	SendMessage (mainwindow, WM_SETICON, (WPARAM)TRUE, (LPARAM)hIcon);
 	SendMessage (mainwindow, WM_SETICON, (WPARAM)FALSE, (LPARAM)hIcon);
 
@@ -933,8 +827,7 @@ qboolean VID_SetFullscreenMode (int modenum)
 
 	mode = modelist[modenum].modenum;
 
-	if ((mgldca = createDisplayDC (modelist[modenum].stretched ||
-		 (int)vid_nopageflip.value)) == NULL)
+	if ((mgldca = createDisplayDC ((int)vid_nopageflip.value)) == NULL)
 	{
 		return false;
 	}
@@ -948,8 +841,6 @@ qboolean VID_SetFullscreenMode (int modenum)
 	DIBWidth = vid.width = vid.conwidth = modelist[modenum].width;
 	vid.aspect = ((float)vid.height / (float)vid.width) *
 				(320.0 / 240.0);
-
-	vid_stretched = modelist[modenum].stretched;
 
 // needed because we're not getting WM_MOVE messages fullscreen on NT
 	window_x = 0;
@@ -1070,8 +961,8 @@ int VID_SetMode (int modenum, unsigned char *palette)
 		IN_HideMouse ();
 	}
 
-	window_width = vid.width << vid_stretched;
-	window_height = vid.height << vid_stretched;
+	window_width = vid.width;
+	window_height = vid.height;
 	VID_UpdateWindowStatus ();
 
 	CDAudio_Resume ();
@@ -1467,7 +1358,6 @@ void	VID_Init (unsigned char *palette)
 	Cvar_RegisterVariable (&_vid_default_mode_win);
 	Cvar_RegisterVariable (&vid_config_x);
 	Cvar_RegisterVariable (&vid_config_y);
-	Cvar_RegisterVariable (&vid_stretch_by_2);
 	Cvar_RegisterVariable (&_windowed_mouse);
 	Cvar_RegisterVariable (&vid_fullscreen_mode);
 	Cvar_RegisterVariable (&vid_windowed_mode);
@@ -1612,27 +1502,11 @@ void FlipScreen(vrect_t *rects)
 			{
 				while (rects)
 				{
-					if (vid_stretched)
-					{
-						FakeMGL_stretchBltCoord(mgldca, mgldcb,
-									rects->x,
-									rects->y,
-									rects->x + rects->width,
-									rects->y + rects->height,
-									rects->x << 1,
-									rects->y << 1,
-									(rects->x + rects->width) << 1,
-									(rects->y + rects->height) << 1);
-					}
-					else
-					{
-						FakeMGL_bitBltCoord(mgldca, mgldcb,
-									rects->x, rects->y,
-									(rects->x + rects->width),
-									(rects->y + rects->height),
-									rects->x, rects->y, MGL_REPLACE_MODE);
-					}
-
+					FakeMGL_bitBltCoord(mgldca, mgldcb,
+								rects->x, rects->y,
+								(rects->x + rects->width),
+								(rects->y + rects->height),
+								rects->x, rects->y, MGL_REPLACE_MODE);
 					rects = rects->pnext;
 				}
 			}
@@ -1659,23 +1533,10 @@ void FlipScreen(vrect_t *rects)
 
 			while (rects)
 			{
-				if (vid_stretched)
-				{
-					FakeMGL_stretchBltCoord(mgldca,mgldcb,
-						rects->x, rects->y,
-						rects->x + rects->width, rects->y + rects->height,
-						rects->x << 1, rects->y << 1,
-						(rects->x + rects->width) << 1,
-						(rects->y + rects->height) << 1);
-				}
-				else
-				{
-					FakeMGL_bitBltCoord(mgldca,mgldcb,
-						rects->x, rects->y,
-						rects->x + rects->width, rects->y + rects->height,
-						rects->x, rects->y, MGL_REPLACE_MODE);
-				}
-
+				FakeMGL_bitBltCoord(mgldca,mgldcb,
+					rects->x, rects->y,
+					rects->x + rects->width, rects->y + rects->height,
+					rects->x, rects->y, MGL_REPLACE_MODE);
 				rects = rects->pnext;
 			}
 		}
