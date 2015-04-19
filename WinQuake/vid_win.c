@@ -934,8 +934,8 @@ qboolean VID_SetWindowedMode (int modenum)
 
 	FakeMGL_makeCurrentDC(dibdc);
 
-	vid.buffer = vid.conbuffer = vid.direct = FakeMGL_getSurface(dibdc);
-	vid.rowbytes = vid.conrowbytes = FakeMGL_getBytesPerLine(dibdc);
+	vid.buffer = vid.conbuffer = vid.direct = NULL;
+	vid.rowbytes = vid.conrowbytes = 0;
 	vid.numpages = 1;
 	vid.maxwarpwidth = WARP_WIDTH;
 	vid.maxwarpheight = WARP_HEIGHT;
@@ -1187,9 +1187,8 @@ int VID_SetMode (int modenum, unsigned char *palette)
 
 void VID_LockBuffer (void)
 {
-
-	if (dibdc)
-		return;
+	void *surface;
+	int bytesPerLine;
 
 	lockcount++;
 
@@ -1198,18 +1197,25 @@ void VID_LockBuffer (void)
 
 	FakeMGL_beginDirectAccess();
 
+	if (dibdc)
+	{
+		surface = FakeMGL_getSurface(dibdc);
+		bytesPerLine = FakeMGL_getBytesPerLine(dibdc);
+	}
 	if (memdc)
 	{
-		// Update surface pointer for linear access modes
-		vid.buffer = vid.conbuffer = vid.direct = FakeMGL_getSurface(memdc);
-		vid.rowbytes = vid.conrowbytes = FakeMGL_getBytesPerLine(memdc);
+		surface = FakeMGL_getSurface(memdc);
+		bytesPerLine = FakeMGL_getBytesPerLine(memdc);
 	}
 	else if (mgldc)
 	{
-		// Update surface pointer for linear access modes
-		vid.buffer = vid.conbuffer = vid.direct = FakeMGL_getSurface(mgldc);
-		vid.rowbytes = vid.conrowbytes = FakeMGL_getBytesPerLine(mgldc);
+		surface = FakeMGL_getSurface(mgldc);
+		bytesPerLine = FakeMGL_getBytesPerLine(mgldc);
 	}
+
+	// Update surface pointer for linear access modes
+	vid.buffer = vid.conbuffer = vid.direct = surface;
+	vid.rowbytes = vid.conrowbytes = bytesPerLine;
 
 	if (r_dowarp)
 		d_viewbuffer = r_warpbuffer;
@@ -1228,9 +1234,6 @@ void VID_LockBuffer (void)
 		
 void VID_UnlockBuffer (void)
 {
-	if (dibdc)
-		return;
-
 	lockcount--;
 
 	if (lockcount > 0)
