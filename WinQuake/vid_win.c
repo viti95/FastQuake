@@ -277,9 +277,6 @@ int VID_Suspend (m_int flags)
 			return MGL_NO_DEACTIVATE;
 		}
 
-		S_BlockSound ();
-		S_ClearBuffer ();
-
 		IN_RestoreOriginalMouseState ();
 		CDAudio_Pause ();
 
@@ -293,10 +290,7 @@ int VID_Suspend (m_int flags)
 	else /* if (flags & MGL_REACTIVATE) */
 	{
 		IN_SetQuakeMouseState ();
-	// fix the leftover Alt from any Alt-Tab or the like that switched us away
-		ClearAllStates ();
 		CDAudio_Resume ();
-		S_UnblockSound ();
 
 		in_mode_set = false;
 
