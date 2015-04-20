@@ -278,17 +278,6 @@ int VID_Suspend (m_int flags)
 }
 
 
-void registerAllDispDrivers(void)
-{
-	FakeMGL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
-}
-
-
-void registerAllMemDrivers(void)
-{
-	/* Register memory context drivers */
-	FakeMGL_registerDriver(MGL_PACKED8NAME,PACKED8_driver);
-}
 
 void VID_InitMGLFull (HINSTANCE hInstance)
 {
@@ -297,8 +286,9 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 
 	// Initialise the MGL
 	FakeMGL_unregisterAllDrivers();
-	registerAllDispDrivers();
-	registerAllMemDrivers();
+	FakeMGL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
+	/* Register memory context drivers */
+	FakeMGL_registerDriver(MGL_PACKED8NAME,PACKED8_driver);
 	FakeMGL_detectGraph(&driver,&mode);
 	m = FakeMGL_availableModes();
 
@@ -479,7 +469,7 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	/* Find the size for the DIB window */
 	/* Initialise the MGL for windowed operation */
 	FakeMGL_setAppInstance(hInstance);
-	registerAllMemDrivers();
+	FakeMGL_registerDriver(MGL_PACKED8NAME, PACKED8_driver);
 	FakeMGL_initWindowed();
 
 	modelist[0].type = MS_WINDOWED;
