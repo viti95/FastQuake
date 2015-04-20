@@ -190,11 +190,6 @@ void CDAudio_WaitForFinish(void)
 	WaitForSingleObject(cdPlayingFinishedEvent, INFINITE);
 }
 
-static qboolean PlayCallback(struct ThreadArgList_t *playData, char *ptr, DWORD len)
-{
-	return PaintSoundOGG(playData, ptr, len);
-}
-
 #define BUFFER_PARTS 8
 
 static void PlayingThreadProc(void *arglist)
@@ -232,10 +227,13 @@ static void PlayingThreadProc(void *arglist)
 
 	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, BUFFER_PARTS, notifies);
 
-	pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER);
+	if (FAILED(pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER)))
+	{
+		Con_DPrintf("CDAudio: cannot lock sound buffer.\n");
+		return;
+	}
 	
-
-	if (!PlayCallback(tal, ptr, (BUFFER_PARTS-1)*part_size))
+	if (!PaintSoundOGG(tal, ptr, (BUFFER_PARTS-1)*part_size))
 		SetEvent(cdStopEvent);
 
 	pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
@@ -255,7 +253,7 @@ static void PlayingThreadProc(void *arglist)
 				pDSBufCD->lpVtbl->Restore(pDSBufCD);
 				pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0);
 			}
-			more_data = PlayCallback(tal, ptr, part_size);
+			more_data = PaintSoundOGG(tal, ptr, part_size);
 			pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
 			if (!more_data)
 			{
