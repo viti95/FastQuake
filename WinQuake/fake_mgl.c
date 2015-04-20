@@ -32,12 +32,6 @@ m_int 	FakeMGL_registerDriver(const char *name,void *driver)
 }
 
 
-void	FakeMGL_unregisterAllDrivers(void)
-{
-	MGL_unregisterAllDrivers();
-}
-
-
 void 	FakeMGL_detectGraph(m_int *driver,m_int *mode)
 {
 	MGL_detectGraph(driver, mode);
@@ -136,13 +130,6 @@ void FakeMGL_flipScreen(FakeMGLDC *dc, int waitVRT)
 	}
 }
 
-m_int	FakeMGL_surfaceAccessType(FakeMGLDC *dc)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-	
-	return MGL_surfaceAccessType(mdc);
-}
-
 
 void FakeMGL_makeCurrentDC(FakeMGLDC *dc)
 {
@@ -155,22 +142,6 @@ void FakeMGL_makeCurrentDC(FakeMGLDC *dc)
 FakeMGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize,m_int bitsPerPixel,pixel_format_t *pf)
 {
 	return makeFakeDC(MGL_createMemoryDC(xSize, ySize, bitsPerPixel, pf));
-}
-
-
-m_int 	FakeMGL_sizex(FakeMGLDC *dc)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-
-	return MGL_sizex(mdc);
-}
-
-
-m_int 	FakeMGL_sizey(FakeMGLDC *dc)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-
-	return MGL_sizey(mdc);
 }
 
 
