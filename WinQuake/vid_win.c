@@ -375,7 +375,7 @@ FakeMGLDC *createDisplayDC()
 	if (!FakeMGL_changeDisplayMode(mode))
         initFatalError();
 
-	if ((dc = FakeMGL_createDisplayDC(2)) == NULL)
+	if ((dc = FakeMGL_createFullscreenDC()) == NULL)
 		return NULL;
 
 	FakeMGL_makeCurrentDC(dc);
@@ -587,7 +587,6 @@ void DestroyMGLDC (void)
 qboolean VID_SetWindowedMode (int modenum)
 {
 	HDC				hdc;
-	pixel_format_t	pf;
 	int				lastmodestate;
 
 	if (!windowed_mode_set)
@@ -696,7 +695,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	if ((mgldca = FakeMGL_createWindowedDC(mainwindow)) == NULL)
 		FakeMGL_fatalError("Unable to create Windowed DC!");
 
-	if ((mgldcb = FakeMGL_createMemoryDC(DIBWidth,DIBHeight,8,&pf)) == NULL)
+	if ((mgldcb = FakeMGL_createMemoryDC(DIBWidth,DIBHeight)) == NULL)
 		FakeMGL_fatalError("Unable to create Memory DC!");
 
 	FakeMGL_makeCurrentDC(mgldcb);
@@ -943,9 +942,9 @@ void VID_LockBuffer (void)
 		return;
 
 	if (mgldcb)
-		FakeMGL_beginDirectAccess(mgldcb, &surface, &bytesPerLine);
+		FakeMGL_lock(mgldcb, &surface, &bytesPerLine);
 	else if (mgldca)
-		FakeMGL_beginDirectAccess(mgldca, &surface, &bytesPerLine);
+		FakeMGL_lock(mgldca, &surface, &bytesPerLine);
 
 	// Update surface pointer for linear access modes
 	vid.buffer = vid.conbuffer = vid.direct = surface;
@@ -976,7 +975,7 @@ void VID_UnlockBuffer (void)
 	if (lockcount < 0)
 		Sys_Error ("Unbalanced unlock");
 
-	FakeMGL_endDirectAccess();
+	FakeMGL_unlock();
 
 // to turn up any unlocked accesses
 	vid.buffer = vid.conbuffer = vid.direct = d_viewbuffer = NULL;
