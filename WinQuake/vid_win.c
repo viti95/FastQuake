@@ -42,7 +42,6 @@ DWORD		WindowStyle, ExWindowStyle;
 int			window_center_x, window_center_y, window_x, window_y, window_width, window_height;
 RECT		window_rect;
 
-static DEVMODE	gdevmode;
 static qboolean	startwindowed = 0, windowed_mode_set;
 static int		firstupdate = 1;
 static qboolean	vid_initialized = false, vid_palettized;
@@ -95,7 +94,6 @@ static int		VID_highhunkmark;
 unsigned char	vid_curpal[256*3];
 
 unsigned short	d_8to16table[256];
-unsigned	d_8to24table[256];
 
 int     driver = grDETECT,mode;
 FakeMGLDC	*mgldca = NULL,*mgldcb = NULL;
@@ -114,7 +112,6 @@ typedef struct {
 
 static vmode_t	modelist[MAX_MODE_LIST];
 static int		nummodes;
-static vmode_t	*pcurrentmode;
 
 int		waitVRT = true;			// True to wait for retrace on flip
 
@@ -278,7 +275,7 @@ int VID_Suspend (m_int flags)
 
 void VID_InitMGLFull (HINSTANCE hInstance)
 {
-	int			i, xRes, yRes, bits, vMode, lowres, curmode, temp;
+	int			i, xRes, yRes, bits, lowres, curmode, temp;
     uchar		*m;
 
 	// Initialise the MGL
@@ -373,7 +370,6 @@ FakeMGLDC *createDisplayDC()
 ****************************************************************************/
 {
     FakeMGLDC			*dc;
-	pixel_format_t	pf;
 
 	// Start the specified video mode
 	if (!FakeMGL_changeDisplayMode(mode))
@@ -396,8 +392,6 @@ FakeMGLDC *createDisplayDC()
 void VID_InitMGLDIB (HINSTANCE hInstance)
 {
 	WNDCLASS		wc;
-	HDC				hdc;
-	int				i;
 
 	hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_ICON2));
 
@@ -595,7 +589,6 @@ qboolean VID_SetWindowedMode (int modenum)
 	HDC				hdc;
 	pixel_format_t	pf;
 	int				lastmodestate;
-	LONG			wlong;
 
 	if (!windowed_mode_set)
 	{
@@ -767,13 +760,7 @@ qboolean VID_SetFullscreenMode (int modenum)
 
 void VID_RestoreOldMode (int original_mode)
 {
-	static qboolean	inerror = false;
-
-	if (inerror)
-		return;
-
 	in_mode_set = false;
-	inerror = true;
 
 // make sure mode set happens (video mode changes)
 	vid_modenum = original_mode - 1;
@@ -785,8 +772,6 @@ void VID_RestoreOldMode (int original_mode)
 		if (!VID_SetMode (windowed_default, vid_curpal))
 			Sys_Error ("Can't set any video mode");
 	}
-
-	inerror = false;
 }
 
 
@@ -802,7 +787,7 @@ void VID_SetDefaultMode (void)
 
 int VID_SetMode (int modenum, unsigned char *palette)
 {
-	int				original_mode, temp, dummy;
+	int				original_mode, temp;
 	qboolean		stat;
     MSG				msg;
 	HDC				hdc;
@@ -1235,7 +1220,6 @@ VID_ForceMode_f
 void VID_ForceMode_f (void)
 {
 	int		modenum;
-	double	testduration;
 
 	if (!vid_testingmode)
 	{
@@ -1356,9 +1340,6 @@ void	VID_Init (unsigned char *palette)
 
 void	VID_Shutdown (void)
 {
-	HDC				hdc;
-	int				dummy;
-
 	if (vid_initialized)
 	{
 		PostMessage (HWND_BROADCAST, WM_PALETTECHANGED, (WPARAM)mainwindow, (LPARAM)0);
@@ -1388,8 +1369,6 @@ FlipScreen
 */
 void FlipScreen(vrect_t *rects)
 {
-	HRESULT		ddrval;
-
 	// Flip the surfaces
 
 	if (DDActive)
@@ -1602,7 +1581,6 @@ void AppActivate(BOOL fActive, BOOL minimize)
 ****************************************************************************/
 {
     HDC			hdc;
-    int			i, t;
 	static BOOL	sound_active;
 
 	ActiveApp = fActive;
@@ -1728,10 +1706,9 @@ LONG WINAPI MainWndProc (
     LPARAM  lParam)
 {
 	LONG			lRet = 0;
-	int				fwKeys, xPos, yPos, fActive, fMinimized, temp;
+	int				fActive, fMinimized, temp;
 	HDC				hdc;
 	PAINTSTRUCT		ps;
-	static int		recursiveflag;
 
 	switch (uMsg)
 	{
