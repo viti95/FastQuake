@@ -284,10 +284,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
     uchar		*m;
 
 	// Initialise the MGL
-	FakeMGL_unregisterAllDrivers();
 	FakeMGL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
-	/* Register memory context drivers */
-	FakeMGL_registerDriver(MGL_PACKED8NAME,PACKED8_driver);
 	FakeMGL_detectGraph(&driver,&mode);
 	m = FakeMGL_availableModes();
 
