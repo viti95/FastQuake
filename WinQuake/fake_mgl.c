@@ -2,14 +2,6 @@
 #include "winquake.h"
 #include "fake_mgl.h"
 
-int     FakeMGL_getMaxPage(FakeMGLDC *dc)
-{
-	if (!dc)
-		return 0;
-	else
-		return dc->mgldc->mi.maxPage;
-}
-
 void 	FakeMGL_exit(void)
 {
 	MGL_exit();
@@ -110,11 +102,6 @@ bool	FakeMGL_changeDisplayMode(m_int mode)
 }
 
 
-m_int	FakeMGL_availablePages(m_int mode)
-{
-	return MGL_availablePages(mode);
-}
-
 static FakeMGLDC * makeFakeDC(MGLDC *realDC)
 {
 	if (realDC)
@@ -129,9 +116,25 @@ static FakeMGLDC * makeFakeDC(MGLDC *realDC)
 
 FakeMGLDC	* FakeMGL_createDisplayDC(m_int numBuffers)
 {
-	return makeFakeDC(MGL_createDisplayDC(numBuffers));
+	FakeMGLDC *fakedc = makeFakeDC(MGL_createDisplayDC(numBuffers));
+
+	// Set up for page flipping
+	MGL_setActivePage(fakedc->mgldc, fakedc->aPage = 1);
+	MGL_setVisualPage(fakedc->mgldc, fakedc->vPage = 0, false);
+
+	return fakedc;
 }
 
+void FakeMGL_flipScreen(FakeMGLDC *dc, int waitVRT)
+{
+	if (dc)
+	{
+		dc->aPage = (dc->aPage+1) % 2;
+		dc->vPage = (dc->vPage+1) % 2;
+		MGL_setActivePage(dc->mgldc,dc->aPage);
+		MGL_setVisualPage(dc->mgldc,dc->vPage,waitVRT);
+	}
+}
 
 m_int	FakeMGL_surfaceAccessType(FakeMGLDC *dc)
 {
@@ -168,22 +171,6 @@ m_int 	FakeMGL_sizey(FakeMGLDC *dc)
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
 	return MGL_sizey(mdc);
-}
-
-
-void	FakeMGL_setActivePage(FakeMGLDC *dc,m_int page)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-
-	MGL_setActivePage(mdc, page);
-}
-
-
-void	FakeMGL_setVisualPage(FakeMGLDC *dc,m_int page,m_int waitVRT)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-
-	MGL_setVisualPage(mdc, page, waitVRT);
 }
 
 

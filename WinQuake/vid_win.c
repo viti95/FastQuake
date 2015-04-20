@@ -116,8 +116,6 @@ static vmode_t	modelist[MAX_MODE_LIST];
 static int		nummodes;
 static vmode_t	*pcurrentmode;
 
-int		aPage;					// Current active display page
-int		vPage;					// Current visible display page
 int		waitVRT = true;			// True to wait for retrace on flip
 
 static vmode_t	badmode;
@@ -388,10 +386,6 @@ FakeMGLDC *createDisplayDC()
 	mgldcb = NULL;
 
 	vid.numpages = 2;
-
-	// Set up for page flipping
-	FakeMGL_setActivePage(dc, aPage = 1);
-	FakeMGL_setVisualPage(dc, vPage = 0, false);
 
 	waitVRT = true;
 
@@ -1403,10 +1397,7 @@ void FlipScreen(vrect_t *rects)
 		if (mgldca)
 		{
 			// We have a flipping surface, so do a hard page flip
-			aPage = (aPage+1) % vid.numpages;
-			vPage = (vPage+1) % vid.numpages;
-			FakeMGL_setActivePage(mgldca,aPage);
-			FakeMGL_setVisualPage(mgldca,vPage,waitVRT);
+			FakeMGL_flipScreen(mgldca, waitVRT);
 		}
 	}
 	else
