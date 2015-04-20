@@ -1,11 +1,11 @@
 typedef struct 
 {
 	MGLDC *mgldc;
+	int		aPage;					// Current active display page
+	int		vPage;					// Current visible display page
 } FakeMGLDC;
 
 typedef int (*FakeMGL_suspend_cb_t)(m_int flags);
-
-int     FakeMGL_getMaxPage(FakeMGLDC *dc);
 
 void 	FakeMGL_exit(void);
 void	FakeMGL_fatalError(const char *msg);
@@ -20,15 +20,12 @@ bool	FakeMGL_init(m_int *driver,m_int *mode);
 bool	FakeMGL_initWindowed();
 void	FakeMGL_setSuspendAppCallback(FakeMGL_suspend_cb_t staveState);
 bool	FakeMGL_changeDisplayMode(m_int mode);
-m_int	FakeMGL_availablePages(m_int mode);
 FakeMGLDC	* FakeMGL_createDisplayDC(m_int numBuffers);
 m_int	FakeMGL_surfaceAccessType(FakeMGLDC *dc);
 void	FakeMGL_makeCurrentDC(FakeMGLDC *dc);
 FakeMGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize,m_int bitsPerPixel,pixel_format_t *pf);
 m_int 	FakeMGL_sizex(FakeMGLDC *dc);
 m_int 	FakeMGL_sizey(FakeMGLDC *dc);
-void	FakeMGL_setActivePage(FakeMGLDC *dc,m_int page);
-void	FakeMGL_setVisualPage(FakeMGLDC *dc,m_int page,m_int waitVRT);
 void	FakeMGL_setAppInstance(MGL_HINSTANCE hInstApp);
 const char * FakeMGL_modeDriverName(m_int mode);
 bool	FakeMGL_destroyDC(FakeMGLDC *dc);
@@ -42,5 +39,5 @@ void 	FakeMGL_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_i
 bool	FakeMGL_setWinDC(FakeMGLDC *dc,MGL_HDC hdc);
 void	FakeMGL_appActivate(FakeMGLDC *winDC,bool active);
 bool	FakeMGL_activatePalette(FakeMGLDC *dc,bool unrealize);
-
+void	FakeMGL_flipScreen(FakeMGLDC *dc, int waitVRT);
 
