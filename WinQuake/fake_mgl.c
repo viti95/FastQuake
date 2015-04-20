@@ -108,9 +108,9 @@ static FakeMGLDC * makeFakeDC(MGLDC *realDC)
 		return NULL;
 }
 
-FakeMGLDC	* FakeMGL_createDisplayDC(m_int numBuffers)
+FakeMGLDC	* FakeMGL_createFullscreenDC()
 {
-	FakeMGLDC *fakedc = makeFakeDC(MGL_createDisplayDC(numBuffers));
+	FakeMGLDC *fakedc = makeFakeDC(MGL_createDisplayDC(2));
 
 	// Set up for page flipping
 	MGL_setActivePage(fakedc->mgldc, fakedc->aPage = 1);
@@ -139,9 +139,9 @@ void FakeMGL_makeCurrentDC(FakeMGLDC *dc)
 }
 
 
-FakeMGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize,m_int bitsPerPixel,pixel_format_t *pf)
+FakeMGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize)
 {
-	return makeFakeDC(MGL_createMemoryDC(xSize, ySize, bitsPerPixel, pf));
+	return makeFakeDC(MGL_createMemoryDC(xSize, ySize, 8, NULL));
 }
 
 
@@ -195,7 +195,7 @@ FakeMGLDC	* FakeMGL_createWindowedDC(MGL_HWND hwnd)
 }
 
 
-void 	FakeMGL_beginDirectAccess(FakeMGLDC *dc, void **surface, int *bytesPerLine)
+void 	FakeMGL_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine)
 {
 	MGL_beginDirectAccess();
 	if (dc)
@@ -208,7 +208,7 @@ void 	FakeMGL_beginDirectAccess(FakeMGLDC *dc, void **surface, int *bytesPerLine
 }
 
 
-void 	FakeMGL_endDirectAccess()
+void 	FakeMGL_unlock()
 {
 	MGL_endDirectAccess();
 }
