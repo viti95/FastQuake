@@ -28,8 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_MODE_LIST	30
 #define VID_ROW_SIZE	3
 
-qboolean	dibonly;
-
 extern int		Minimized;
 
 HWND		mainwindow;
@@ -291,7 +289,6 @@ void registerAllMemDrivers(void)
 	/* Register memory context drivers */
 	FakeMGL_registerDriver(MGL_PACKED8NAME,PACKED8_driver);
 }
-
 
 void VID_InitMGLFull (HINSTANCE hInstance)
 {
@@ -1344,15 +1341,11 @@ void	VID_Init (unsigned char *palette)
 	Cmd_AddCommand ("vid_fullscreen", VID_Fullscreen_f);
 	Cmd_AddCommand ("vid_minimize", VID_Minimize_f);
 
-	if (COM_CheckParm ("-dibonly"))
-		dibonly = true;
-
 	VID_InitMGLDIB (global_hInstance);
 
 	basenummodes = nummodes;
 
-	if (!dibonly)
-		VID_InitMGLFull (global_hInstance);
+	VID_InitMGLFull (global_hInstance);
 
 	vid.maxwarpwidth = WARP_WIDTH;
 	vid.maxwarpheight = WARP_HEIGHT;
