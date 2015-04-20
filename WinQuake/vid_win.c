@@ -66,7 +66,6 @@ cvar_t		_vid_default_mode = {"_vid_default_mode","0", true};
 // Note that 3 is MODE_FULLSCREEN_DEFAULT
 cvar_t		_vid_default_mode_win = {"_vid_default_mode_win","3", true};
 cvar_t		vid_wait = {"vid_wait","0"};
-cvar_t		vid_nopageflip = {"vid_nopageflip","0", true};
 cvar_t		_vid_wait_override = {"_vid_wait_override", "0", true};
 cvar_t		vid_config_x = {"vid_config_x","800", true};
 cvar_t		vid_config_y = {"vid_config_y","600", true};
@@ -364,7 +363,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 }
 
 
-FakeMGLDC *createDisplayDC(int forcemem)
+FakeMGLDC *createDisplayDC()
 /****************************************************************************
 *
 * Function:     createDisplayDC
@@ -380,64 +379,24 @@ FakeMGLDC *createDisplayDC(int forcemem)
 {
     FakeMGLDC			*dc;
 	pixel_format_t	pf;
-	int				npages;
 
 	// Start the specified video mode
 	if (!FakeMGL_changeDisplayMode(mode))
         initFatalError();
 
-	npages = FakeMGL_availablePages(mode);
-
-	if (npages > 3)
-		npages = 3;
-
-	if (!COM_CheckParm ("-notriplebuf"))
-	{
-		if (npages > 2)
-		{
-			npages = 2;
-		}
-	}
-
-	if ((dc = FakeMGL_createDisplayDC(npages)) == NULL)
+	if ((dc = FakeMGL_createDisplayDC(2)) == NULL)
 		return NULL;
 
-	if (!forcemem && FakeMGL_getMaxPage(dc) > 0)
-	{
-		FakeMGL_makeCurrentDC(dc);
-		mgldcb = NULL;
-	}
-	else
-	{
-		// Set up for blitting from a memory buffer
-		mgldcb = FakeMGL_createMemoryDC(FakeMGL_sizex(dc)+1,FakeMGL_sizey(dc)+1,8,&pf);
-		FakeMGL_makeCurrentDC(mgldcb);
-	}
+	FakeMGL_makeCurrentDC(dc);
+	mgldcb = NULL;
 
-	// Enable page flipping even for even for blitted surfaces
-	if (forcemem)
-	{
-		vid.numpages = 1;
-	}
-	else
-	{
-		vid.numpages = FakeMGL_getMaxPage(dc) + 1;
+	vid.numpages = 2;
 
-		if (vid.numpages > 1)
-		{
-			// Set up for page flipping
-			FakeMGL_setActivePage(dc, aPage = 1);
-			FakeMGL_setVisualPage(dc, vPage = 0, false);
-		}
+	// Set up for page flipping
+	FakeMGL_setActivePage(dc, aPage = 1);
+	FakeMGL_setVisualPage(dc, vPage = 0, false);
 
-		if (vid.numpages > 3)
-			vid.numpages = 3;
-	}
-
-	if (vid.numpages == 2)
-		waitVRT = true;
-	else
-		waitVRT = false;
+	waitVRT = true;
 
 	return dc;
 }
@@ -784,7 +743,7 @@ qboolean VID_SetFullscreenMode (int modenum)
 
 	mode = modelist[modenum].modenum;
 
-	if ((mgldca = createDisplayDC ((int)vid_nopageflip.value)) == NULL)
+	if ((mgldca = createDisplayDC ()) == NULL)
 	{
 		return false;
 	}
@@ -1128,10 +1087,7 @@ void	VID_SetPalette (unsigned char *palette)
 		if (mgldcb)
 		{
 			FakeMGL_setPalette(mgldcb, pal, 256, 0);
-			if (!DDActive)
-			{
-				FakeMGL_realizePalette(mgldcb, 256, 0, false);
-			}
+			FakeMGL_realizePalette(mgldcb, 256, 0, false);
 		}
 	}
 
@@ -1309,7 +1265,6 @@ void	VID_Init (unsigned char *palette)
 
 	Cvar_RegisterVariable (&vid_mode);
 	Cvar_RegisterVariable (&vid_wait);
-	Cvar_RegisterVariable (&vid_nopageflip);
 	Cvar_RegisterVariable (&_vid_wait_override);
 	Cvar_RegisterVariable (&_vid_default_mode);
 	Cvar_RegisterVariable (&_vid_default_mode_win);
@@ -1450,27 +1405,11 @@ void FlipScreen(vrect_t *rects)
 	{
 		if (mgldca)
 		{
-			if (mgldcb)
-			{
-				while (rects)
-				{
-					FakeMGL_bitBltCoord(mgldca, mgldcb,
-								rects->x, rects->y,
-								(rects->x + rects->width),
-								(rects->y + rects->height),
-								rects->x, rects->y, MGL_REPLACE_MODE);
-					rects = rects->pnext;
-				}
-			}
-
-			if (vid.numpages > 1)
-			{
-				// We have a flipping surface, so do a hard page flip
-				aPage = (aPage+1) % vid.numpages;
-				vPage = (vPage+1) % vid.numpages;
-				FakeMGL_setActivePage(mgldca,aPage);
-				FakeMGL_setVisualPage(mgldca,vPage,waitVRT);
-			}
+			// We have a flipping surface, so do a hard page flip
+			aPage = (aPage+1) % vid.numpages;
+			vPage = (vPage+1) % vid.numpages;
+			FakeMGL_setActivePage(mgldca,aPage);
+			FakeMGL_setVisualPage(mgldca,vPage,waitVRT);
 		}
 	}
 	else
