@@ -316,23 +316,6 @@ void	FakeMGL_DIB_appActivate(FakeMGLDC_DIB *winDC,bool active)
 }
 
 
-void	FakeMGL_FULL_appActivate(FakeMGLDC_FULL *winDC,bool active)
-{
-	/* Let the MGL know when your application is being activated or deactivated.
-	* This function only needs to be called when running in Windowed modes and
-	* you have set the system palette to SYSPAL_NOSTATIC mode, to ensure
-	* that the MGL can properly re-map your application palette when your
-	* app is not active and allow Windows to re-map your bitmap colors on the
-	* fly. This function should be passed a pointer to the currently active
-	* MGL Windowed DC and a flag to indicate whether the app is in the background
-	* or not.
-	*/
-	MGLDC *mwinDC = winDC ? winDC->mgldc : NULL;
-
-	MGL_appActivate(mwinDC, active);
-}
-
-
 bool	FakeMGL_DIB_activatePalette(FakeMGLDC_DIB *dc,bool unrealize)
 {
 	/* Activate the WindowDC's palette */

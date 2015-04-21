@@ -1579,9 +1579,7 @@ void AppActivate(BOOL fActive, BOOL minimize)
 
 // messy, but it seems to work
 
-	if (windc)
-		FakeMGL_FULL_appActivate(windc, ActiveApp);
-	else if (mgldc)
+	if (mgldc)
 		FakeMGL_DIB_appActivate(mgldc, ActiveApp);
 
 	if (vid_initialized)
