@@ -101,11 +101,11 @@ bool	FakeMGL_DIB_changeDisplayMode(m_int mode)
 }
 
 
-static FakeMGLDC * makeFakeDC(MGLDC *realDC)
+static FakeMGLDC_FULL * makeFakeDC_FULL(MGLDC *realDC)
 {
 	if (realDC)
 	{
-		FakeMGLDC *fakedc = malloc(sizeof(FakeMGLDC));
+		FakeMGLDC_FULL *fakedc = malloc(sizeof(FakeMGLDC_FULL));
 		fakedc->mgldc = realDC;
 		return fakedc;
 	}
@@ -113,9 +113,23 @@ static FakeMGLDC * makeFakeDC(MGLDC *realDC)
 		return NULL;
 }
 
-FakeMGLDC	* FakeMGL_FULL_createFullscreenDC()
+
+static FakeMGLDC_DIB * makeFakeDC_DIB(MGLDC *realDC)
 {
-	FakeMGLDC *fakedc = makeFakeDC(MGL_createDisplayDC(2));
+	if (realDC)
+	{
+		FakeMGLDC_DIB *fakedc = malloc(sizeof(FakeMGLDC_DIB));
+		fakedc->mgldc = realDC;
+		return fakedc;
+	}
+	else
+		return NULL;
+}
+
+
+FakeMGLDC_FULL	* FakeMGL_FULL_createFullscreenDC()
+{
+	FakeMGLDC_FULL *fakedc = makeFakeDC_FULL(MGL_createDisplayDC(2));
 
 	if (fakedc)
 	{
@@ -128,7 +142,7 @@ FakeMGLDC	* FakeMGL_FULL_createFullscreenDC()
 	return fakedc;
 }
 
-void FakeMGL_FULL_flipScreen(FakeMGLDC *dc, int waitVRT)
+void FakeMGL_FULL_flipScreen(FakeMGLDC_FULL *dc, int waitVRT)
 {
 	if (dc)
 	{
@@ -140,9 +154,9 @@ void FakeMGL_FULL_flipScreen(FakeMGLDC *dc, int waitVRT)
 }
 
 
-FakeMGLDC 	* FakeMGL_DIB_createMemoryDC(m_int xSize,m_int ySize)
+FakeMGLDC_DIB 	* FakeMGL_DIB_createMemoryDC(m_int xSize,m_int ySize)
 {
-	FakeMGLDC *fakedc = makeFakeDC(MGL_createMemoryDC(xSize, ySize, 8, NULL));
+	FakeMGLDC_DIB *fakedc = makeFakeDC_DIB(MGL_createMemoryDC(xSize, ySize, 8, NULL));
 	
 	if (fakedc)
 		MGL_makeCurrentDC(fakedc->mgldc);
@@ -163,7 +177,7 @@ const char * FakeMGL_modeDriverName(m_int mode)
 }
 
 
-bool	FakeMGL_FULL_destroyDC(FakeMGLDC *dc)
+bool	FakeMGL_FULL_destroyDC(FakeMGLDC_FULL *dc)
 {
 	if (!dc)
 		return MGL_destroyDC(NULL);
@@ -176,7 +190,7 @@ bool	FakeMGL_FULL_destroyDC(FakeMGLDC *dc)
 }
 
 
-bool	FakeMGL_DIB_destroyDC(FakeMGLDC *dc)
+bool	FakeMGL_DIB_destroyDC(FakeMGLDC_DIB *dc)
 {
 	if (!dc)
 		return MGL_destroyDC(NULL);
@@ -209,13 +223,13 @@ void 	FakeMGL_DIB_registerFullScreenWindow(HWND hwndFullScreen)
 }
 
 
-FakeMGLDC	* FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd)
+FakeMGLDC_DIB	* FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd)
 {
-	return makeFakeDC(MGL_createWindowedDC(hwnd));
+	return makeFakeDC_DIB(MGL_createWindowedDC(hwnd));
 }
 
 
-void 	FakeMGL_FULL_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine)
+void 	FakeMGL_FULL_lock(FakeMGLDC_FULL *dc, void **surface, int *bytesPerLine)
 {
 	MGL_beginDirectAccess();
 	if (dc)
@@ -228,7 +242,7 @@ void 	FakeMGL_FULL_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine)
 }
 
 
-void 	FakeMGL_DIB_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine)
+void 	FakeMGL_DIB_lock(FakeMGLDC_DIB *dc, void **surface, int *bytesPerLine)
 {
 	MGL_beginDirectAccess();
 	if (dc)
@@ -247,7 +261,7 @@ void 	FakeMGL_unlock()
 }
 
 
-void 	FakeMGL_DIB_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex)
+void 	FakeMGL_DIB_setPalette(FakeMGLDC_DIB *dc,palette_t *pal,m_int numColors,m_int startIndex)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -255,7 +269,7 @@ void 	FakeMGL_DIB_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int 
 }
 
 
-void 	FakeMGL_FULL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex)
+void 	FakeMGL_FULL_setPalette(FakeMGLDC_FULL *dc,palette_t *pal,m_int numColors,m_int startIndex)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -263,7 +277,7 @@ void 	FakeMGL_FULL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int
 }
 
 
-void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
+void	FakeMGL_DIB_realizePalette(FakeMGLDC_DIB *dc,m_int numColors,m_int startIndex,m_int waitVRT)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -271,7 +285,7 @@ void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int
 }
 
 
-void	FakeMGL_DIB_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
+void	FakeMGL_FULL_realizePalette(FakeMGLDC_FULL *dc,m_int numColors,m_int startIndex,m_int waitVRT)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -279,15 +293,7 @@ void	FakeMGL_DIB_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m
 }
 
 
-void	FakeMGL_FULL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-
-	MGL_realizePalette(mdc, numColors, startIndex, waitVRT);
-}
-
-
-void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
+void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dst,FakeMGLDC_DIB *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
 {
 	MGLDC *mdst = dst ? dst->mgldc : NULL;
 	MGLDC *msrc = src ? src->mgldc : NULL;
@@ -296,7 +302,7 @@ void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top
 }
 
 
-bool	FakeMGL_DIB_setWinDC(FakeMGLDC *dc,MGL_HDC hdc)
+bool	FakeMGL_DIB_setWinDC(FakeMGLDC_DIB *dc,MGL_HDC hdc)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -304,7 +310,7 @@ bool	FakeMGL_DIB_setWinDC(FakeMGLDC *dc,MGL_HDC hdc)
 }
 
 
-void	FakeMGL_DIB_appActivate(FakeMGLDC *winDC,bool active)
+void	FakeMGL_DIB_appActivate(FakeMGLDC_DIB *winDC,bool active)
 {
 	/* Let the MGL know when your application is being activated or deactivated.
 	* This function only needs to be called when running in Windowed modes and
@@ -321,7 +327,7 @@ void	FakeMGL_DIB_appActivate(FakeMGLDC *winDC,bool active)
 }
 
 
-void	FakeMGL_FULL_appActivate(FakeMGLDC *winDC,bool active)
+void	FakeMGL_FULL_appActivate(FakeMGLDC_FULL *winDC,bool active)
 {
 	/* Let the MGL know when your application is being activated or deactivated.
 	* This function only needs to be called when running in Windowed modes and
@@ -338,7 +344,7 @@ void	FakeMGL_FULL_appActivate(FakeMGLDC *winDC,bool active)
 }
 
 
-bool	FakeMGL_DIB_activatePalette(FakeMGLDC *dc,bool unrealize)
+bool	FakeMGL_DIB_activatePalette(FakeMGLDC_DIB *dc,bool unrealize)
 {
 	/* Activate the WindowDC's palette */
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
@@ -347,7 +353,7 @@ bool	FakeMGL_DIB_activatePalette(FakeMGLDC *dc,bool unrealize)
 }
 
 
-bool	FakeMGL_FULL_activatePalette(FakeMGLDC *dc,bool unrealize)
+bool	FakeMGL_FULL_activatePalette(FakeMGLDC_FULL *dc,bool unrealize)
 {
 	/* Activate the WindowDC's palette */
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
