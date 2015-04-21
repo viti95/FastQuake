@@ -163,7 +163,7 @@ const char * FakeMGL_modeDriverName(m_int mode)
 }
 
 
-bool	FakeMGL_destroyDC(FakeMGLDC *dc)
+bool	FakeMGL_FULL_destroyDC(FakeMGLDC *dc)
 {
 	if (!dc)
 		return MGL_destroyDC(NULL);
@@ -174,6 +174,20 @@ bool	FakeMGL_destroyDC(FakeMGLDC *dc)
 		return result;
 	}
 }
+
+
+bool	FakeMGL_DIB_destroyDC(FakeMGLDC *dc)
+{
+	if (!dc)
+		return MGL_destroyDC(NULL);
+	else
+	{
+		bool result = MGL_destroyDC(dc->mgldc);
+		free(dc);
+		return result;
+	}
+}
+
 
 
 void 	FakeMGL_DIB_registerFullScreenWindow(HWND hwndFullScreen)
@@ -233,7 +247,15 @@ void 	FakeMGL_unlock()
 }
 
 
-void 	FakeMGL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex)
+void 	FakeMGL_DIB_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex)
+{
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_setPalette(mdc, pal, numColors, startIndex);
+}
+
+
+void 	FakeMGL_FULL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int startIndex)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -242,6 +264,22 @@ void 	FakeMGL_setPalette(FakeMGLDC *dc,palette_t *pal,m_int numColors,m_int star
 
 
 void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
+{
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_realizePalette(mdc, numColors, startIndex, waitVRT);
+}
+
+
+void	FakeMGL_DIB_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
+{
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_realizePalette(mdc, numColors, startIndex, waitVRT);
+}
+
+
+void	FakeMGL_FULL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int waitVRT)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -266,7 +304,7 @@ bool	FakeMGL_DIB_setWinDC(FakeMGLDC *dc,MGL_HDC hdc)
 }
 
 
-void	FakeMGL_appActivate(FakeMGLDC *winDC,bool active)
+void	FakeMGL_DIB_appActivate(FakeMGLDC *winDC,bool active)
 {
 	/* Let the MGL know when your application is being activated or deactivated.
 	* This function only needs to be called when running in Windowed modes and
@@ -283,7 +321,33 @@ void	FakeMGL_appActivate(FakeMGLDC *winDC,bool active)
 }
 
 
-bool	FakeMGL_activatePalette(FakeMGLDC *dc,bool unrealize)
+void	FakeMGL_FULL_appActivate(FakeMGLDC *winDC,bool active)
+{
+	/* Let the MGL know when your application is being activated or deactivated.
+	* This function only needs to be called when running in Windowed modes and
+	* you have set the system palette to SYSPAL_NOSTATIC mode, to ensure
+	* that the MGL can properly re-map your application palette when your
+	* app is not active and allow Windows to re-map your bitmap colors on the
+	* fly. This function should be passed a pointer to the currently active
+	* MGL Windowed DC and a flag to indicate whether the app is in the background
+	* or not.
+	*/
+	MGLDC *mwinDC = winDC ? winDC->mgldc : NULL;
+
+	MGL_appActivate(mwinDC, active);
+}
+
+
+bool	FakeMGL_DIB_activatePalette(FakeMGLDC *dc,bool unrealize)
+{
+	/* Activate the WindowDC's palette */
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	return MGL_activatePalette(mdc, unrealize);
+}
+
+
+bool	FakeMGL_FULL_activatePalette(FakeMGLDC *dc,bool unrealize)
 {
 	/* Activate the WindowDC's palette */
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
