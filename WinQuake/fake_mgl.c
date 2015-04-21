@@ -8,21 +8,10 @@ void 	FakeMGL_exit(void)
 }
 
 
-void	FakeMGL_fatalError(const char *msg)
+void	FakeMGL_fail()
 {
-	MGL_fatalError(msg);
-}
-
-
-const char * FakeMGL_errorMsg(m_int err)
-{
-	return MGL_errorMsg(err);
-}
-
-
-m_int 	FakeMGL_result(void)
-{
-	return MGL_result();
+	FakeMGL_exit();
+	MGL_fatalError(MGL_errorMsg(MGL_result()));
 }
 
 
@@ -128,9 +117,13 @@ FakeMGLDC	* FakeMGL_FULL_createFullscreenDC()
 {
 	FakeMGLDC *fakedc = makeFakeDC(MGL_createDisplayDC(2));
 
-	// Set up for page flipping
-	MGL_setActivePage(fakedc->mgldc, fakedc->aPage = 1);
-	MGL_setVisualPage(fakedc->mgldc, fakedc->vPage = 0, false);
+	if (fakedc)
+	{
+		// Set up for page flipping
+		MGL_setActivePage(fakedc->mgldc, fakedc->aPage = 1);
+		MGL_setVisualPage(fakedc->mgldc, fakedc->vPage = 0, false);
+		MGL_makeCurrentDC(fakedc->mgldc);
+	}
 
 	return fakedc;
 }
@@ -147,25 +140,14 @@ void FakeMGL_FULL_flipScreen(FakeMGLDC *dc, int waitVRT)
 }
 
 
-void FakeMGL_FULL_makeCurrentDC(FakeMGLDC *dc)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-
-	MGL_makeCurrentDC(mdc);
-}
-
-
-void FakeMGL_DIB_makeCurrentDC(FakeMGLDC *dc)
-{
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
-
-	MGL_makeCurrentDC(mdc);
-}
-
-
 FakeMGLDC 	* FakeMGL_DIB_createMemoryDC(m_int xSize,m_int ySize)
 {
-	return makeFakeDC(MGL_createMemoryDC(xSize, ySize, 8, NULL));
+	FakeMGLDC *fakedc = makeFakeDC(MGL_createMemoryDC(xSize, ySize, 8, NULL));
+	
+	if (fakedc)
+		MGL_makeCurrentDC(fakedc->mgldc);
+
+	return fakedc;
 }
 
 

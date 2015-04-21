@@ -251,8 +251,7 @@ qboolean VID_AllocBuffers (int width, int height)
 
 void initFatalError(void)
 {
-	FakeMGL_exit();
-	FakeMGL_fatalError(FakeMGL_errorMsg(FakeMGL_result()));
+	FakeMGL_fail();
 	exit(EXIT_FAILURE);
 }
 
@@ -378,7 +377,6 @@ FakeMGLDC *createDisplayDC()
 	if ((dc = FakeMGL_FULL_createFullscreenDC()) == NULL)
 		return NULL;
 
-	FakeMGL_FULL_makeCurrentDC(dc);
 	mgldcb = NULL;
 
 	vid.numpages = 2;
@@ -693,12 +691,10 @@ qboolean VID_SetWindowedMode (int modenum)
 
 	/* Create the MGL window DC and the MGL memory DC */
 	if ((mgldca = FakeMGL_DIB_createWindowedDC(mainwindow)) == NULL)
-		FakeMGL_fatalError("Unable to create Windowed DC!");
+		FakeMGL_fail();
 
 	if ((mgldcb = FakeMGL_DIB_createMemoryDC(DIBWidth,DIBHeight)) == NULL)
-		FakeMGL_fatalError("Unable to create Memory DC!");
-
-	FakeMGL_DIB_makeCurrentDC(mgldcb);
+		FakeMGL_fail();
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
 	vid.rowbytes = vid.conrowbytes = 0;

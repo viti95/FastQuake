@@ -10,9 +10,7 @@ typedef int (*FakeMGL_suspend_cb_t)(m_int flags);
 // functions common to DIB (windowed) and FULL (fullscreen DirectDraw) modes
 
 void 	FakeMGL_exit(void);
-void	FakeMGL_fatalError(const char *msg);
-const char * FakeMGL_errorMsg(m_int err);
-m_int 	FakeMGL_result(void);
+void	FakeMGL_fail(void);
 
 const char * FakeMGL_modeDriverName(m_int mode);
 bool	FakeMGL_destroyDC(FakeMGLDC *dc);
@@ -34,7 +32,6 @@ bool	FakeMGL_DIB_initWindowed();
 bool	FakeMGL_DIB_changeDisplayMode(m_int mode);
 FakeMGLDC	* FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd);
 FakeMGLDC 	* FakeMGL_DIB_createMemoryDC(m_int xSize,m_int ySize);
-void	FakeMGL_DIB_makeCurrentDC(FakeMGLDC *dc);
 void 	FakeMGL_DIB_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine);
 bool	FakeMGL_DIB_setWinDC(FakeMGLDC *dc,MGL_HDC hdc);
 void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op);
