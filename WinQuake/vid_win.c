@@ -279,9 +279,9 @@ void VID_InitMGLFull (HINSTANCE hInstance)
     uchar		*m;
 
 	// Initialise the MGL
-	FakeMGL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
-	FakeMGL_detectGraph(&driver,&mode);
-	m = FakeMGL_availableModes();
+	FakeMGL_FULL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
+	FakeMGL_FULL_detectGraph(&driver,&mode);
+	m = FakeMGL_FULL_availableModes();
 
 	if (m[0] != 0xFF)
 	{
@@ -291,7 +291,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 	// find the lowest-res mode
 		for (i = 0; m[i] != 0xFF; i++)
 		{
-			FakeMGL_modeResolution(m[i], &xRes, &yRes,&bits);
+			FakeMGL_FULL_modeResolution(m[i], &xRes, &yRes,&bits);
 
 			if ((bits == 8) &&
 				(xRes <= MAXWIDTH) &&
@@ -313,7 +313,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 
 		for (i = 0; m[i] != 0xFF; i++)
 		{
-			FakeMGL_modeResolution(m[i], &xRes, &yRes,&bits);
+			FakeMGL_FULL_modeResolution(m[i], &xRes, &yRes,&bits);
 
 			if ((bits == 8) &&
 				(xRes <= MAXWIDTH) &&
@@ -345,13 +345,13 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 
 		temp = m[0];
 
-		if (!FakeMGL_init(&driver, &temp))
+		if (!FakeMGL_FULL_init(&driver, &temp))
 		{
 			initFatalError();
 		}
 	}
 
-	FakeMGL_setSuspendAppCallback(VID_Suspend);
+	FakeMGL_FULL_setSuspendAppCallback(VID_Suspend);
 }
 
 
@@ -372,13 +372,13 @@ FakeMGLDC *createDisplayDC()
     FakeMGLDC			*dc;
 
 	// Start the specified video mode
-	if (!FakeMGL_changeDisplayMode(mode))
+	if (!FakeMGL_FULL_changeDisplayMode(mode))
         initFatalError();
 
-	if ((dc = FakeMGL_createFullscreenDC()) == NULL)
+	if ((dc = FakeMGL_FULL_createFullscreenDC()) == NULL)
 		return NULL;
 
-	FakeMGL_makeCurrentDC(dc);
+	FakeMGL_FULL_makeCurrentDC(dc);
 	mgldcb = NULL;
 
 	vid.numpages = 2;
@@ -412,9 +412,9 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 
 	/* Find the size for the DIB window */
 	/* Initialise the MGL for windowed operation */
-	FakeMGL_setAppInstance(hInstance);
-	FakeMGL_registerDriver(MGL_PACKED8NAME, PACKED8_driver);
-	FakeMGL_initWindowed();
+	FakeMGL_DIB_setAppInstance(hInstance);
+	FakeMGL_DIB_registerDriver(MGL_PACKED8NAME, PACKED8_driver);
+	FakeMGL_DIB_initWindowed();
 
 	modelist[0].type = MS_WINDOWED;
 	modelist[0].width = 320;
@@ -606,7 +606,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	DestroyMGLDC ();
 
 // KJB: Signal to the MGL that we are going back to windowed mode
-	if (!FakeMGL_changeDisplayMode(grWINDOWED))
+	if (!FakeMGL_DIB_changeDisplayMode(grWINDOWED))
 		initFatalError();
 
 	WindowRect.top = WindowRect.left = 0;
@@ -644,7 +644,7 @@ qboolean VID_SetWindowedMode (int modenum)
 			Sys_Error ("Couldn't create DIB window");
 
 	// tell MGL to use this window for fullscreen modes
-		FakeMGL_registerFullScreenWindow (mainwindow);
+		FakeMGL_DIB_registerFullScreenWindow (mainwindow);
 
 		vid_mode_set = true;
 	}
@@ -692,13 +692,13 @@ qboolean VID_SetWindowedMode (int modenum)
 	ReleaseDC(mainwindow, hdc);
 
 	/* Create the MGL window DC and the MGL memory DC */
-	if ((mgldca = FakeMGL_createWindowedDC(mainwindow)) == NULL)
+	if ((mgldca = FakeMGL_DIB_createWindowedDC(mainwindow)) == NULL)
 		FakeMGL_fatalError("Unable to create Windowed DC!");
 
-	if ((mgldcb = FakeMGL_createMemoryDC(DIBWidth,DIBHeight)) == NULL)
+	if ((mgldcb = FakeMGL_DIB_createMemoryDC(DIBWidth,DIBHeight)) == NULL)
 		FakeMGL_fatalError("Unable to create Memory DC!");
 
-	FakeMGL_makeCurrentDC(mgldcb);
+	FakeMGL_DIB_makeCurrentDC(mgldcb);
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
 	vid.rowbytes = vid.conrowbytes = 0;
@@ -942,9 +942,9 @@ void VID_LockBuffer (void)
 		return;
 
 	if (mgldcb)
-		FakeMGL_lock(mgldcb, &surface, &bytesPerLine);
+		FakeMGL_DIB_lock(mgldcb, &surface, &bytesPerLine);
 	else if (mgldca)
-		FakeMGL_lock(mgldca, &surface, &bytesPerLine);
+		FakeMGL_FULL_lock(mgldca, &surface, &bytesPerLine);
 
 	// Update surface pointer for linear access modes
 	vid.buffer = vid.conbuffer = vid.direct = surface;
@@ -1061,6 +1061,7 @@ void	VID_SetPalette (unsigned char *palette)
 		FakeMGL_realizePalette(mgldca, 256, 0, false);
 		if (mgldcb)
 		{
+			// DIB only
 			FakeMGL_setPalette(mgldcb, pal, 256, 0);
 			FakeMGL_realizePalette(mgldcb, 256, 0, false);
 		}
@@ -1375,7 +1376,7 @@ void FlipScreen(vrect_t *rects)
 		if (mgldca)
 		{
 			// We have a flipping surface, so do a hard page flip
-			FakeMGL_flipScreen(mgldca, waitVRT);
+			FakeMGL_FULL_flipScreen(mgldca, waitVRT);
 		}
 	}
 	else
@@ -1386,11 +1387,11 @@ void FlipScreen(vrect_t *rects)
 
 		if (mgldca && mgldcb)
 		{
-			FakeMGL_setWinDC(mgldca,hdcScreen);
+			FakeMGL_DIB_setWinDC(mgldca,hdcScreen);
 
 			while (rects)
 			{
-				FakeMGL_bitBltCoord(mgldca,mgldcb,
+				FakeMGL_DIB_bitBltCoord(mgldca,mgldcb,
 					rects->x, rects->y,
 					rects->x + rects->width, rects->y + rects->height,
 					rects->x, rects->y, MGL_REPLACE_MODE);
