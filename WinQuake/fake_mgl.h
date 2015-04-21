@@ -1,7 +1,7 @@
 typedef struct 
 {
-	MGLDC *mgldca;
-	MGLDC *mgldcb;
+	MGLDC *windc;
+	MGLDC *dibdc;
 } FakeMGLDC_DIB;
 
 typedef struct 
