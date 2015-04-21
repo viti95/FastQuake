@@ -575,10 +575,18 @@ char *VID_GetExtModeDescription (int mode)
 
 void DestroyMGLDC (void)
 {
-	if (mgldca)
-		FakeMGL_destroyDC(mgldca);
-	if (mgldcb)
-		FakeMGL_destroyDC(mgldcb);
+	if (DDActive)
+	{
+		if (mgldca)
+			FakeMGL_FULL_destroyDC(mgldca);
+	}
+	else
+	{
+		if (mgldca)
+			FakeMGL_DIB_destroyDC(mgldca);
+		if (mgldcb)
+			FakeMGL_DIB_destroyDC(mgldcb);
+	}
 	mgldca = mgldcb = NULL;
 }
 
@@ -1053,13 +1061,17 @@ void	VID_SetPalette (unsigned char *palette)
 		if (!mgldca)
 			return;
 
-		FakeMGL_setPalette(mgldca, pal, 256, 0);
-		FakeMGL_realizePalette(mgldca, 256, 0, false);
-		if (mgldcb)
+		if (DDActive)
 		{
-			// DIB only
-			FakeMGL_setPalette(mgldcb, pal, 256, 0);
-			FakeMGL_realizePalette(mgldcb, 256, 0, false);
+			FakeMGL_FULL_setPalette(mgldca, pal, 256, 0);
+			FakeMGL_FULL_realizePalette(mgldca, 256, 0, false);
+		}
+		else
+		{
+			FakeMGL_DIB_setPalette(mgldca, pal, 256, 0);
+			FakeMGL_DIB_realizePalette(mgldca, 256, 0, false);
+			FakeMGL_DIB_setPalette(mgldcb, pal, 256, 0);
+			FakeMGL_DIB_realizePalette(mgldcb, 256, 0, false);
 		}
 	}
 
@@ -1583,7 +1595,8 @@ void AppActivate(BOOL fActive, BOOL minimize)
 
 // messy, but it seems to work
 
-	FakeMGL_appActivate(mgldca, ActiveApp);
+	if (!DDActive)
+		FakeMGL_DIB_appActivate(mgldca, ActiveApp);
 
 	if (vid_initialized)
 	{
@@ -1791,8 +1804,16 @@ LONG WINAPI MainWndProc (
 
 			if (!in_mode_set)
 			{
-				if (mgldca)
-					FakeMGL_activatePalette(mgldca,true);
+				if (DDActive)
+				{
+					if (mgldca)
+						FakeMGL_FULL_activatePalette(mgldca,true);
+				}
+				else
+				{
+					if (mgldca)
+						FakeMGL_DIB_activatePalette(mgldca,true);
+				}
 
 				VID_SetPalette(vid_curpal);
 			}
@@ -1892,13 +1913,17 @@ LONG WINAPI MainWndProc (
 
 			scr_fullupdate = 0;
 
-			if (vid_initialized && !in_mode_set && mgldca && FakeMGL_activatePalette(mgldca,false) && !Minimized)
+			if (vid_initialized && !in_mode_set && mgldca && !Minimized)
 			{
-				VID_SetPalette (vid_curpal);
-				InvalidateRect (mainwindow, NULL, false);
+				if (DDActive && FakeMGL_FULL_activatePalette(mgldca,false) ||
+					!DDActive && FakeMGL_DIB_activatePalette(mgldca,false))
+				{
+					VID_SetPalette (vid_curpal);
+					InvalidateRect (mainwindow, NULL, false);
 
-			// specifically required if WM_QUERYNEWPALETTE realizes a new palette
-				lRet = TRUE;
+				// specifically required if WM_QUERYNEWPALETTE realizes a new palette
+					lRet = TRUE;
+				}
 			}
 			break;
 
