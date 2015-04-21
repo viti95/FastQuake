@@ -37,7 +37,7 @@ HWND WINAPI InitializeWindow (HINSTANCE hInstance, int nCmdShow);
 int			DIBWidth, DIBHeight;
 qboolean	DDActive;
 RECT		WindowRect;
-DWORD		WindowStyle, ExWindowStyle;
+DWORD		WindowStyle;
 
 int			window_center_x, window_center_y, window_x, window_y, window_width, window_height;
 RECT		window_rect;
@@ -623,15 +623,13 @@ qboolean VID_SetWindowedMode (int modenum)
 	WindowStyle = WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU |
 				  WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPSIBLINGS |
 				  WS_CLIPCHILDREN;
-	ExWindowStyle = 0;
 	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
 
 // the first time we're called to set the mode, create the window we'll use
 // for the rest of the session
 	if (!vid_mode_set)
 	{
-		mainwindow = CreateWindowEx (
-			 ExWindowStyle,
+		mainwindow = CreateWindow (
 			 "WinQuake",
 			 "WinQuake",
 			 WindowStyle,
@@ -654,7 +652,6 @@ qboolean VID_SetWindowedMode (int modenum)
 	else
 	{
 		SetWindowLong(mainwindow, GWL_STYLE, WindowStyle | WS_VISIBLE);
-		SetWindowLong(mainwindow, GWL_EXSTYLE, ExWindowStyle);
 	}
 
 	if (!SetWindowPos (mainwindow,
