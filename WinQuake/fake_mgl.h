@@ -40,7 +40,6 @@ void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dc,m_int left,m_int top,m_int right
 
 // FULL-specific functions
 bool	FakeMGL_FULL_destroyDC(FakeMGLDC_FULL *dc);
-void	FakeMGL_FULL_appActivate(FakeMGLDC_FULL *winDC,bool active);
 void 	FakeMGL_FULL_setPalette(FakeMGLDC_FULL *dc,palette_t *pal,m_int numColors,m_int startIndex);
 bool	FakeMGL_FULL_activatePalette(FakeMGLDC_FULL *dc,bool unrealize);
 m_int 	FakeMGL_FULL_registerDriver(const char *name,void *driver);
