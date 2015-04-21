@@ -114,12 +114,13 @@ static FakeMGLDC_FULL * makeFakeDC_FULL(MGLDC *realDC)
 }
 
 
-static FakeMGLDC_DIB * makeFakeDC_DIB(MGLDC *realDC)
+static FakeMGLDC_DIB * makeFakeDC_DIB(MGLDC *realDCwin, MGLDC *realDCmem)
 {
-	if (realDC)
+	if (realDCwin && realDCmem)
 	{
 		FakeMGLDC_DIB *fakedc = malloc(sizeof(FakeMGLDC_DIB));
-		fakedc->mgldc = realDC;
+		fakedc->mgldca = realDCwin;
+		fakedc->mgldcb = realDCmem;
 		return fakedc;
 	}
 	else
@@ -185,7 +186,7 @@ bool	FakeMGL_DIB_destroyDC(FakeMGLDC_DIB *dc)
 		return MGL_destroyDC(NULL);
 	else
 	{
-		bool result = MGL_destroyDC(dc->mgldc);
+		bool result = MGL_destroyDC(dc->mgldca) & MGL_destroyDC(dc->mgldcb);
 		free(dc);
 		return result;
 	}
@@ -212,18 +213,17 @@ void 	FakeMGL_DIB_registerFullScreenWindow(HWND hwndFullScreen)
 }
 
 
-bool	FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd, m_int xSize,m_int ySize, FakeMGLDC_DIB **windc, FakeMGLDC_DIB **memdc)
+bool	FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd, m_int xSize,m_int ySize, FakeMGLDC_DIB **dc)
 {
-	if (windc == NULL || memdc == NULL)
+	if (dc == NULL)
 		return false;
 
-	*windc = makeFakeDC_DIB(MGL_createWindowedDC(hwnd));
-	*memdc = makeFakeDC_DIB(MGL_createMemoryDC(xSize, ySize, 8, NULL));
+	*dc = makeFakeDC_DIB(MGL_createWindowedDC(hwnd), MGL_createMemoryDC(xSize, ySize, 8, NULL));
 
-	if (*windc == NULL || *memdc == NULL)
+	if (!*dc)
 		return false;
 
-	MGL_makeCurrentDC((*memdc)->mgldc);
+	MGL_makeCurrentDC((*dc)->mgldcb);
 
 	return true;
 }
@@ -248,9 +248,9 @@ void 	FakeMGL_DIB_lock(FakeMGLDC_DIB *dc, void **surface, int *bytesPerLine)
 	if (dc)
 	{
 		if (surface)
-			*surface = dc->mgldc->surface;
+			*surface = dc->mgldcb->surface;
 		if (bytesPerLine)
-			*bytesPerLine = dc->mgldc->mi.bytesPerLine;
+			*bytesPerLine = dc->mgldcb->mi.bytesPerLine;
 	}
 }
 
@@ -263,10 +263,13 @@ void 	FakeMGL_unlock()
 
 void 	FakeMGL_DIB_setPalette(FakeMGLDC_DIB *dc,palette_t *pal,m_int numColors,m_int startIndex)
 {
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
+	if (!dc)
+		return;
 
-	MGL_setPalette(mdc, pal, numColors, startIndex);
-	MGL_realizePalette(mdc, numColors, startIndex, false);
+	MGL_setPalette(dc->mgldca, pal, numColors, startIndex);
+	MGL_realizePalette(dc->mgldca, numColors, startIndex, false);
+	MGL_setPalette(dc->mgldcb, pal, numColors, startIndex);
+	MGL_realizePalette(dc->mgldcb, numColors, startIndex, false);
 }
 
 
@@ -279,18 +282,18 @@ void 	FakeMGL_FULL_setPalette(FakeMGLDC_FULL *dc,palette_t *pal,m_int numColors,
 }
 
 
-void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dst,FakeMGLDC_DIB *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
+void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dc,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
 {
-	MGLDC *mdst = dst ? dst->mgldc : NULL;
-	MGLDC *msrc = src ? src->mgldc : NULL;
+	if (!dc)
+		return;
 
-	MGL_bitBltCoord(mdst, msrc, left, top, right, bottom, dstLeft, dstTop, op);
+	MGL_bitBltCoord(dc->mgldca, dc->mgldcb, left, top, right, bottom, dstLeft, dstTop, op);
 }
 
 
 bool	FakeMGL_DIB_setWinDC(FakeMGLDC_DIB *dc,MGL_HDC hdc)
 {
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
+	MGLDC *mdc = dc ? dc->mgldca : NULL;
 
 	return MGL_setWinDC(mdc, hdc);
 }
@@ -307,7 +310,7 @@ void	FakeMGL_DIB_appActivate(FakeMGLDC_DIB *winDC,bool active)
 	* MGL Windowed DC and a flag to indicate whether the app is in the background
 	* or not.
 	*/
-	MGLDC *mwinDC = winDC ? winDC->mgldc : NULL;
+	MGLDC *mwinDC = winDC ? winDC->mgldca : NULL;
 
 	MGL_appActivate(mwinDC, active);
 }
@@ -333,7 +336,7 @@ void	FakeMGL_FULL_appActivate(FakeMGLDC_FULL *winDC,bool active)
 bool	FakeMGL_DIB_activatePalette(FakeMGLDC_DIB *dc,bool unrealize)
 {
 	/* Activate the WindowDC's palette */
-	MGLDC *mdc = dc ? dc->mgldc : NULL;
+	MGLDC *mdc = dc ? dc->mgldca : NULL;
 
 	return MGL_activatePalette(mdc, unrealize);
 }

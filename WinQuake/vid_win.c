@@ -96,7 +96,7 @@ unsigned char	vid_curpal[256*3];
 unsigned short	d_8to16table[256];
 
 int     driver = grDETECT,mode;
-FakeMGLDC_DIB	*mgldca = NULL,*mgldcb = NULL;
+FakeMGLDC_DIB	*mgldcd = NULL;
 FakeMGLDC_FULL	*mgldcf = NULL;
 
 typedef struct {
@@ -378,8 +378,6 @@ FakeMGLDC_FULL *createDisplayDC()
 	if ((dc = FakeMGL_FULL_createFullscreenDC()) == NULL)
 		return NULL;
 
-	mgldcb = NULL;
-
 	vid.numpages = 2;
 
 	waitVRT = true;
@@ -577,14 +575,16 @@ char *VID_GetExtModeDescription (int mode)
 void DestroyMGLDC (void)
 {
 	if (mgldcf)
+	{
 		FakeMGL_FULL_destroyDC(mgldcf);
-	mgldcf = NULL;
+		mgldcf = NULL;
+	}
 
-	if (mgldca)
-		FakeMGL_DIB_destroyDC(mgldca);
-	if (mgldcb)
-		FakeMGL_DIB_destroyDC(mgldcb);
-	mgldca = mgldcb = NULL;
+	if (mgldcd)
+	{
+		FakeMGL_DIB_destroyDC(mgldcd);
+		mgldcd = NULL;
+	}
 }
 
 qboolean VID_SetWindowedMode (int modenum)
@@ -695,7 +695,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	ReleaseDC(mainwindow, hdc);
 
 	/* Create the MGL window DC and the MGL memory DC */
-	if (!FakeMGL_DIB_createWindowedDC(mainwindow,DIBWidth,DIBHeight,&mgldca, &mgldcb))
+	if (!FakeMGL_DIB_createWindowedDC(mainwindow,DIBWidth,DIBHeight,&mgldcd))
 		FakeMGL_fail();
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
@@ -939,8 +939,8 @@ void VID_LockBuffer (void)
 	if (lockcount > 1)
 		return;
 
-	if (mgldcb)
-		FakeMGL_DIB_lock(mgldcb, &surface, &bytesPerLine);
+	if (mgldcd)
+		FakeMGL_DIB_lock(mgldcd, &surface, &bytesPerLine);
 	else if (mgldcf)
 		FakeMGL_FULL_lock(mgldcf, &surface, &bytesPerLine);
 
@@ -990,7 +990,7 @@ int VID_ForceUnlockedAndReturnState (void)
 
 	lk = lockcount;
 
-	if (mgldcb)
+	if (mgldcd)
 	{
 		lockcount = 0;
 	}
@@ -1007,7 +1007,7 @@ int VID_ForceUnlockedAndReturnState (void)
 void VID_ForceLockState (int lk)
 {
 
-	if (!mgldcb && lk)
+	if (!mgldcd && lk)
 	{
 		lockcount = 0;
 		VID_LockBuffer ();
@@ -1056,10 +1056,9 @@ void	VID_SetPalette (unsigned char *palette)
 		{
 			FakeMGL_FULL_setPalette(mgldcf, pal, 256, 0);
 		}
-		else if (mgldca)
+		else if (mgldcd)
 		{
-			FakeMGL_DIB_setPalette(mgldca, pal, 256, 0);
-			FakeMGL_DIB_setPalette(mgldcb, pal, 256, 0);
+			FakeMGL_DIB_setPalette(mgldcd, pal, 256, 0);
 		}
 	}
 
@@ -1381,13 +1380,13 @@ void FlipScreen(vrect_t *rects)
 
 		hdcScreen = GetDC(mainwindow);
 
-		if (mgldca && mgldcb)
+		if (mgldcd)
 		{
-			FakeMGL_DIB_setWinDC(mgldca,hdcScreen);
+			FakeMGL_DIB_setWinDC(mgldcd,hdcScreen);
 
 			while (rects)
 			{
-				FakeMGL_DIB_bitBltCoord(mgldca,mgldcb,
+				FakeMGL_DIB_bitBltCoord(mgldcd,
 					rects->x, rects->y,
 					rects->x + rects->width, rects->y + rects->height,
 					rects->x, rects->y, MGL_REPLACE_MODE);
@@ -1585,8 +1584,8 @@ void AppActivate(BOOL fActive, BOOL minimize)
 
 	if (mgldcf)
 		FakeMGL_FULL_appActivate(mgldcf, ActiveApp);
-	else if (mgldca)
-		FakeMGL_DIB_appActivate(mgldca, ActiveApp);
+	else if (mgldcd)
+		FakeMGL_DIB_appActivate(mgldcd, ActiveApp);
 
 	if (vid_initialized)
 	{
@@ -1796,8 +1795,8 @@ LONG WINAPI MainWndProc (
 			{
 				if (mgldcf)
 					FakeMGL_FULL_activatePalette(mgldcf,true);
-				else if (mgldca)
-						FakeMGL_DIB_activatePalette(mgldca,true);
+				else if (mgldcd)
+						FakeMGL_DIB_activatePalette(mgldcd,true);
 
 				VID_SetPalette(vid_curpal);
 			}
@@ -1900,7 +1899,7 @@ LONG WINAPI MainWndProc (
 			if (vid_initialized && !in_mode_set && !Minimized)
 			{
 				if (mgldcf && FakeMGL_FULL_activatePalette(mgldcf,false) ||
-					mgldca && FakeMGL_DIB_activatePalette(mgldca,false))
+					mgldcd && FakeMGL_DIB_activatePalette(mgldcd,false))
 				{
 					VID_SetPalette (vid_curpal);
 					InvalidateRect (mainwindow, NULL, false);
