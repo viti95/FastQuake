@@ -154,17 +154,6 @@ void FakeMGL_FULL_flipScreen(FakeMGLDC_FULL *dc, int waitVRT)
 }
 
 
-FakeMGLDC_DIB 	* FakeMGL_DIB_createMemoryDC(m_int xSize,m_int ySize)
-{
-	FakeMGLDC_DIB *fakedc = makeFakeDC_DIB(MGL_createMemoryDC(xSize, ySize, 8, NULL));
-	
-	if (fakedc)
-		MGL_makeCurrentDC(fakedc->mgldc);
-
-	return fakedc;
-}
-
-
 void	FakeMGL_DIB_setAppInstance(MGL_HINSTANCE hInstApp)
 {
 	MGL_setAppInstance(hInstApp);
@@ -223,9 +212,20 @@ void 	FakeMGL_DIB_registerFullScreenWindow(HWND hwndFullScreen)
 }
 
 
-FakeMGLDC_DIB	* FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd)
+bool	FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd, m_int xSize,m_int ySize, FakeMGLDC_DIB **windc, FakeMGLDC_DIB **memdc)
 {
-	return makeFakeDC_DIB(MGL_createWindowedDC(hwnd));
+	if (windc == NULL || memdc == NULL)
+		return false;
+
+	*windc = makeFakeDC_DIB(MGL_createWindowedDC(hwnd));
+	*memdc = makeFakeDC_DIB(MGL_createMemoryDC(xSize, ySize, 8, NULL));
+
+	if (*windc == NULL || *memdc == NULL)
+		return false;
+
+	MGL_makeCurrentDC((*memdc)->mgldc);
+
+	return true;
 }
 
 
