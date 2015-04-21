@@ -20,7 +20,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops;.\ogg_v9.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -70,7 +70,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/nodefaultlib:libc.lib"
-				AdditionalDependencies="dxguid.lib mgllt.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib strmiids.lib"
+				AdditionalDependencies="dsound.lib dxguid.lib mgllt.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib strmiids.lib"
 				OutputFile="$(OutDir)\winquake.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -110,7 +110,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops;.\ogg_v9.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -160,7 +160,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/nodefaultlib:libc.lib"
-				AdditionalDependencies="dxguid.lib comctl32.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib  strmiids.lib"
+				AdditionalDependencies="dsound.lib dxguid.lib comctl32.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib  strmiids.lib"
 				OutputFile="$(OutDir)\glquake.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -200,7 +200,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops;.\oggd_v9.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -250,7 +250,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/nodefaultlib:libc.lib"
-				AdditionalDependencies="dxguid.lib mgllt.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib  strmiids.lib"
+				AdditionalDependencies="dsound.lib dxguid.lib mgllt.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib  strmiids.lib"
 				OutputFile="$(OutDir)\winquake.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -289,7 +289,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops;.\oggd_v9.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
@@ -339,7 +339,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/nodefaultlib:libc.lib"
-				AdditionalDependencies="dxguid.lib comctl32.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib  strmiids.lib"
+				AdditionalDependencies="dsound.lib dxguid.lib comctl32.lib winmm.lib wsock32.lib opengl32.lib glu32.lib odbc32.lib odbccp32.lib  strmiids.lib"
 				OutputFile="$(OutDir)\glquake.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"

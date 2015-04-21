@@ -22,89 +22,273 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <windows.h>
 #include "quakedef.h"
+#include "winquake.h"
+
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
 
 extern	HWND	mainwindow;
 extern	cvar_t	bgmvolume;
+extern qboolean	dsound_init;
 
 static qboolean cdValid = false;
-static qboolean	playing = false;
+static volatile qboolean playing = false;
 static qboolean	wasPlaying = false;
 static qboolean	initialized = false;
 static qboolean	enabled = false;
-static qboolean playLooping = false;
+static volatile qboolean playLooping = false;
 static float	cdvolume;
 static byte 	remap[100];
 static byte		cdrom;
-static byte		playTrack;
+static volatile byte playTrack;
 static byte		maxTrack;
 
-UINT	wDeviceID;
+static LPDIRECTSOUNDBUFFER pDSBufCD;
+static LPDIRECTSOUNDNOTIFY pDSBufCDNotify;
+static DWORD gCDBufSize;
+static HANDLE cdStopEvent, cdPlayingFinishedEvent;
 
+struct ThreadArgList_t
+{
+	byte playTrack;
+	qboolean playLooping;
+
+	OggVorbis_File vf;
+	char oggb[4096];
+	unsigned oggb_first;
+	unsigned oggb_count;
+};
+
+typedef qboolean (*playcallback_t)(struct ThreadArgList_t *playData, char *ptr, DWORD len);
+typedef void (*finishnotify_t)(struct ThreadArgList_t *playData);
+
+qboolean OpenOGG(const char *filename, struct ThreadArgList_t *ud)
+{
+	FILE *file;
+	file = fopen(filename, "rb");
+	if (file == NULL)
+		return false;
+
+	if(ov_open_callbacks(file, &ud->vf, NULL, 0, OV_CALLBACKS_DEFAULT) < 0)
+	{
+		fclose(file);
+		return true;
+	}
+
+	ud->oggb_count = 0;
+	return true;
+}
+
+
+void CloseOGG(struct ThreadArgList_t *ud)
+{
+	ov_clear(&ud->vf);
+}
+
+static qboolean PaintSoundOGG(struct ThreadArgList_t *ud, char *ptr, DWORD len)
+{
+	int dummy;
+	unsigned remaining = len;
+	unsigned OGGBUFFER_SIZE = ARRAYSIZE(ud->oggb);
+	unsigned read;
+
+	unsigned tocopy;
+	if (ud->oggb_count > 0)
+	{
+		tocopy = min(len, ud->oggb_count);
+		memcpy(ptr, ud->oggb + ud->oggb_first, tocopy);
+		ptr += tocopy;
+		remaining -= tocopy;
+		ud->oggb_first += tocopy;
+		ud->oggb_count -= tocopy;
+	}
+	while (remaining >= OGGBUFFER_SIZE)
+	{
+		read = ov_read(&ud->vf, ptr, OGGBUFFER_SIZE, 0, 2, 1, &dummy);
+		if (read == 0)
+		{
+			memset(ptr, 0, remaining);
+			return false;
+		}
+		remaining -= read;
+		ptr += read;
+	}
+	while (remaining > 0)
+	{
+		read = ov_read(&ud->vf, ud->oggb, OGGBUFFER_SIZE, 0, 2, 1, &dummy);
+		if (read == 0)
+		{
+			memset(ptr, 0, remaining);
+			return false;
+		}
+		tocopy = min(read, remaining);
+		memcpy(ptr, ud->oggb, tocopy);
+		remaining -= tocopy;
+		ptr += tocopy;
+		ud->oggb_count = read - tocopy;
+		ud->oggb_first = tocopy;
+	}
+	return true;
+}
 
 static void CDAudio_Eject(void)
 {
-	DWORD	dwReturn;
-
-    if (dwReturn = mciSendCommand(wDeviceID, MCI_SET, MCI_SET_DOOR_OPEN, (DWORD)NULL))
-		Con_DPrintf("MCI_SET_DOOR_OPEN failed (%i)\n", dwReturn);
 }
 
 
 static void CDAudio_CloseDoor(void)
 {
-	DWORD	dwReturn;
-
-    if (dwReturn = mciSendCommand(wDeviceID, MCI_SET, MCI_SET_DOOR_CLOSED, (DWORD)NULL))
-		Con_DPrintf("MCI_SET_DOOR_CLOSED failed (%i)\n", dwReturn);
 }
-
 
 static int CDAudio_GetAudioDiskInfo(void)
 {
-	DWORD				dwReturn;
-	MCI_STATUS_PARMS	mciStatusParms;
-
+	int i;
 
 	cdValid = false;
 
-	mciStatusParms.dwItem = MCI_STATUS_READY;
-    dwReturn = mciSendCommand(wDeviceID, MCI_STATUS, MCI_STATUS_ITEM | MCI_WAIT, (DWORD) (LPVOID) &mciStatusParms);
-	if (dwReturn)
+	maxTrack = 0;
+
+	// CDDA track numbers are in range of 1..99
+	for (i=1; i<100; i++)
 	{
-		Con_DPrintf("CDAudio: drive ready test - get status failed\n");
-		return -1;
-	}
-	if (!mciStatusParms.dwReturn)
-	{
-		Con_DPrintf("CDAudio: drive not ready\n");
-		return -1;
+		FILE *f;
+		char filename[MAX_PATH];
+		sprintf(filename, "%s\\Track%03d.ogg", com_gamedir, i);
+		f = fopen(filename, "rb");
+		if (!f)
+		{
+			sprintf(filename, "%s\\sound\\cdtracks\\Track%03d.ogg", com_gamedir, i);
+			f = fopen(filename, "rb");
+		}
+		if (f)
+		{
+			maxTrack = i;
+			remap[i] = i;
+			fclose(f);
+		}
+		else
+		{
+			remap[i] = -1;
+			// track 1 is allowed not to exist
+			if (i > 1)
+				break;
+		}
 	}
 
-	mciStatusParms.dwItem = MCI_STATUS_NUMBER_OF_TRACKS;
-    dwReturn = mciSendCommand(wDeviceID, MCI_STATUS, MCI_STATUS_ITEM | MCI_WAIT, (DWORD) (LPVOID) &mciStatusParms);
-	if (dwReturn)
-	{
-		Con_DPrintf("CDAudio: get tracks - status failed\n");
-		return -1;
-	}
-	if (mciStatusParms.dwReturn < 1)
+	if (maxTrack == 0)
 	{
 		Con_DPrintf("CDAudio: no music tracks\n");
 		return -1;
 	}
 
 	cdValid = true;
-	maxTrack = mciStatusParms.dwReturn;
-
 	return 0;
 }
 
+void CDAudio_WaitForFinish(void)
+{
+	WaitForSingleObject(cdPlayingFinishedEvent, INFINITE);
+}
+
+#define BUFFER_PARTS 8
+
+static void PlayingThreadProc(void *arglist)
+{
+	struct ThreadArgList_t *tal = arglist;
+
+	DSBPOSITIONNOTIFY notifies[BUFFER_PARTS];
+	HANDLE events[BUFFER_PARTS+1]; // +1 for StopEvent
+	HANDLE endevents[2];
+	char *ptr;
+	int i;
+	DWORD dummy, fillpart;
+	DWORD part_size;
+	HRESULT hr;
+	qboolean more_data;
+	qboolean trackPlayedToEnd = false;
+
+	CDAudio_WaitForFinish();
+	ResetEvent(cdPlayingFinishedEvent);
+	ResetEvent(cdStopEvent);
+
+	part_size = gCDBufSize / BUFFER_PARTS;
+
+	for (i=0; i<BUFFER_PARTS; i++)
+	{
+		events[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
+		notifies[i].dwOffset = i * part_size;
+		notifies[i].hEventNotify = events[i];
+	}
+	events[i] = cdStopEvent;
+
+	pDSBufCD->lpVtbl->GetStatus(pDSBufCD, &dummy);
+	if (dummy & DSBSTATUS_BUFFERLOST)
+		pDSBufCD->lpVtbl->Restore(pDSBufCD);
+
+	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, BUFFER_PARTS, notifies);
+
+	if (FAILED(pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER)))
+	{
+		Con_DPrintf("CDAudio: cannot lock sound buffer.\n");
+		return;
+	}
+	
+	if (!PaintSoundOGG(tal, ptr, (BUFFER_PARTS-1)*part_size))
+		SetEvent(cdStopEvent);
+
+	pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
+
+	pDSBufCD->lpVtbl->SetCurrentPosition(pDSBufCD, 0);
+	pDSBufCD->lpVtbl->Play(pDSBufCD, 0, 0, DSBPLAY_LOOPING);
+
+	while(true)
+	{
+		fillpart = WaitForMultipleObjects(BUFFER_PARTS+1, events, FALSE, 2000);
+		if (fillpart >= WAIT_OBJECT_0 && fillpart < WAIT_OBJECT_0 + BUFFER_PARTS)
+		{
+			fillpart = (fillpart - WAIT_OBJECT_0 + BUFFER_PARTS - 1) % BUFFER_PARTS;
+			hr = pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0);
+			if (hr == DSERR_BUFFERLOST)
+			{
+				pDSBufCD->lpVtbl->Restore(pDSBufCD);
+				pDSBufCD->lpVtbl->Lock(pDSBufCD, part_size * fillpart, part_size, &ptr, &dummy, NULL, NULL, 0);
+			}
+			more_data = PaintSoundOGG(tal, ptr, part_size);
+			pDSBufCD->lpVtbl->Unlock(pDSBufCD, ptr, dummy, NULL, 0);
+			if (!more_data)
+			{
+				endevents[0] = events[fillpart];
+				endevents[1] = cdStopEvent;
+				if (WaitForMultipleObjects(2, endevents, FALSE, 2000) == WAIT_OBJECT_0)
+					trackPlayedToEnd = true;
+				break;
+			}
+		}
+		else
+			break;
+	}
+
+	pDSBufCD->lpVtbl->Stop(pDSBufCD);
+	pDSBufCDNotify->lpVtbl->SetNotificationPositions(pDSBufCDNotify, 0, NULL);
+	for (i=0; i<BUFFER_PARTS; i++)
+		CloseHandle(events[i]);
+	
+	CloseOGG(tal);
+
+	playing = false;
+	free(arglist);
+
+	SetEvent(cdPlayingFinishedEvent);
+
+	if (trackPlayedToEnd && playLooping)
+		CDAudio_Play(playTrack, true);	
+}
 
 void CDAudio_Play(byte track, qboolean looping)
 {
-	DWORD				dwReturn;
-    MCI_PLAY_PARMS		mciPlayParms;
-	MCI_STATUS_PARMS	mciStatusParms;
+	HANDLE playingThread;
+	char filename[MAX_PATH];
+	struct ThreadArgList_t *tal;
 
 	if (!enabled)
 		return;
@@ -124,31 +308,6 @@ void CDAudio_Play(byte track, qboolean looping)
 		return;
 	}
 
-	// don't try to play a non-audio track
-	mciStatusParms.dwItem = MCI_CDA_STATUS_TYPE_TRACK;
-	mciStatusParms.dwTrack = track;
-    dwReturn = mciSendCommand(wDeviceID, MCI_STATUS, MCI_STATUS_ITEM | MCI_TRACK | MCI_WAIT, (DWORD) (LPVOID) &mciStatusParms);
-	if (dwReturn)
-	{
-		Con_DPrintf("MCI_STATUS failed (%i)\n", dwReturn);
-		return;
-	}
-	if (mciStatusParms.dwReturn != MCI_CDA_TRACK_AUDIO)
-	{
-		Con_Printf("CDAudio: track %i is not audio\n", track);
-		return;
-	}
-
-	// get the length of the track to be played
-	mciStatusParms.dwItem = MCI_STATUS_LENGTH;
-	mciStatusParms.dwTrack = track;
-    dwReturn = mciSendCommand(wDeviceID, MCI_STATUS, MCI_STATUS_ITEM | MCI_TRACK | MCI_WAIT, (DWORD) (LPVOID) &mciStatusParms);
-	if (dwReturn)
-	{
-		Con_DPrintf("MCI_STATUS failed (%i)\n", dwReturn);
-		return;
-	}
-
 	if (playing)
 	{
 		if (playTrack == track)
@@ -156,22 +315,31 @@ void CDAudio_Play(byte track, qboolean looping)
 		CDAudio_Stop();
 	}
 
-    mciPlayParms.dwFrom = MCI_MAKE_TMSF(track, 0, 0, 0);
-	mciPlayParms.dwTo = (mciStatusParms.dwReturn << 8) | track;
-    mciPlayParms.dwCallback = (DWORD)mainwindow;
-    dwReturn = mciSendCommand(wDeviceID, MCI_PLAY, MCI_NOTIFY | MCI_FROM | MCI_TO, (DWORD)(LPVOID) &mciPlayParms);
-	if (dwReturn)
+	tal = malloc(sizeof(struct ThreadArgList_t));
+	tal->playLooping = looping;
+	tal->playTrack = track;
+
+	sprintf(filename, "%s\\Track%03d.ogg", com_gamedir, track);
+	if (!OpenOGG(filename, tal))
 	{
-		Con_DPrintf("CDAudio: MCI_PLAY failed (%i)\n", dwReturn);
-		return;
+		sprintf(filename, "%s\\sound\\cdtracks\\Track%03d.ogg", com_gamedir, track);
+		if (!OpenOGG(filename, tal))
+		{
+			Con_DPrintf("CDAudio: Cannot open Vorbis file \"%s\"", filename);
+			return;
+		}
 	}
 
 	playLooping = looping;
 	playTrack = track;
 	playing = true;
 
-	if (cdvolume == 0.0)
-		CDAudio_Pause ();
+	// force volume update
+	cdvolume = -1;
+
+	playingThread = (HANDLE)_beginthreadex(NULL, 0, PlayingThreadProc, tal, CREATE_SUSPENDED, NULL);
+	SetThreadPriority(playingThread, THREAD_PRIORITY_TIME_CRITICAL);
+	ResumeThread(playingThread);
 }
 
 
@@ -185,28 +353,21 @@ void CDAudio_Stop(void)
 	if (!playing)
 		return;
 
-    if (dwReturn = mciSendCommand(wDeviceID, MCI_STOP, 0, (DWORD)NULL))
-		Con_DPrintf("MCI_STOP failed (%i)", dwReturn);
+	SetEvent(cdStopEvent);
 
 	wasPlaying = false;
 	playing = false;
 }
 
-
 void CDAudio_Pause(void)
 {
-	DWORD				dwReturn;
-	MCI_GENERIC_PARMS	mciGenericParms;
-
 	if (!enabled)
 		return;
 
 	if (!playing)
 		return;
 
-	mciGenericParms.dwCallback = (DWORD)mainwindow;
-    if (dwReturn = mciSendCommand(wDeviceID, MCI_PAUSE, 0, (DWORD)(LPVOID) &mciGenericParms))
-		Con_DPrintf("MCI_PAUSE failed (%i)", dwReturn);
+	//!TODO: pause here
 
 	wasPlaying = playing;
 	playing = false;
@@ -215,9 +376,6 @@ void CDAudio_Pause(void)
 
 void CDAudio_Resume(void)
 {
-	DWORD			dwReturn;
-    MCI_PLAY_PARMS	mciPlayParms;
-
 	if (!enabled)
 		return;
 	
@@ -226,16 +384,9 @@ void CDAudio_Resume(void)
 
 	if (!wasPlaying)
 		return;
-	
-    mciPlayParms.dwFrom = MCI_MAKE_TMSF(playTrack, 0, 0, 0);
-    mciPlayParms.dwTo = MCI_MAKE_TMSF(playTrack + 1, 0, 0, 0);
-    mciPlayParms.dwCallback = (DWORD)mainwindow;
-    dwReturn = mciSendCommand(wDeviceID, MCI_PLAY, MCI_TO | MCI_NOTIFY, (DWORD)(LPVOID) &mciPlayParms);
-	if (dwReturn)
-	{
-		Con_DPrintf("CDAudio: MCI_PLAY failed (%i)\n", dwReturn);
-		return;
-	}
+
+	//!TODO: resume here
+
 	playing = true;
 }
 
@@ -360,41 +511,6 @@ static void CD_f (void)
 }
 
 
-LONG CDAudio_MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (lParam != wDeviceID)
-		return 1;
-
-	switch (wParam)
-	{
-		case MCI_NOTIFY_SUCCESSFUL:
-			if (playing)
-			{
-				playing = false;
-				if (playLooping)
-					CDAudio_Play(playTrack, true);
-			}
-			break;
-
-		case MCI_NOTIFY_ABORTED:
-		case MCI_NOTIFY_SUPERSEDED:
-			break;
-
-		case MCI_NOTIFY_FAILURE:
-			Con_DPrintf("MCI_NOTIFY_FAILURE\n");
-			CDAudio_Stop ();
-			cdValid = false;
-			break;
-
-		default:
-			Con_DPrintf("Unexpected MM_MCINOTIFY type (%i)\n", wParam);
-			return 1;
-	}
-
-	return 0;
-}
-
-
 void CDAudio_Update(void)
 {
 	if (!enabled)
@@ -402,27 +518,25 @@ void CDAudio_Update(void)
 
 	if (bgmvolume.value != cdvolume)
 	{
-		if (cdvolume)
-		{
-			Cvar_SetValue ("bgmvolume", 0.0);
-			cdvolume = bgmvolume.value;
-			CDAudio_Pause ();
-		}
+		LONG max_attenuation = 4000; // 40 dB
+		LONG attenuation;
+
+		cdvolume = bgmvolume.value;
+		if (cdvolume < 0.01)
+			attenuation = DSBVOLUME_MIN;
 		else
-		{
-			Cvar_SetValue ("bgmvolume", 1.0);
-			cdvolume = bgmvolume.value;
-			CDAudio_Resume ();
-		}
+			attenuation = -max_attenuation + cdvolume*max_attenuation;
+		pDSBufCD->lpVtbl->SetVolume(pDSBufCD, attenuation);
 	}
 }
 
 
 int CDAudio_Init(void)
 {
-	DWORD	dwReturn;
-	MCI_OPEN_PARMS	mciOpenParms;
-    MCI_SET_PARMS	mciSetParms;
+	WAVEFORMATEX	format;
+	DSBUFFERDESC	dsbuf;
+	DWORD			dwSize;
+	char*			lpData;
 	int				n;
 
 	if (cls.state == ca_dedicated)
@@ -431,31 +545,49 @@ int CDAudio_Init(void)
 	if (COM_CheckParm("-nocdaudio"))
 		return -1;
 
-	mciOpenParms.lpstrDeviceType = "cdaudio";
-	if (dwReturn = mciSendCommand(0, MCI_OPEN, MCI_OPEN_TYPE | MCI_OPEN_SHAREABLE, (DWORD) (LPVOID) &mciOpenParms))
+	if (!dsound_init)
 	{
-		Con_Printf("CDAudio_Init: MCI_OPEN failed (%i)\n", dwReturn);
+		Con_Printf("CDAudio_Init: DirectSound not initialized.\n");
 		return -1;
 	}
-	wDeviceID = mciOpenParms.wDeviceID;
 
-    // Set the time format to track/minute/second/frame (TMSF).
-    mciSetParms.dwTimeFormat = MCI_FORMAT_TMSF;
-    if (dwReturn = mciSendCommand(wDeviceID, MCI_SET, MCI_SET_TIME_FORMAT, (DWORD)(LPVOID) &mciSetParms))
-    {
-		Con_Printf("MCI_SET_TIME_FORMAT failed (%i)\n", dwReturn);
-        mciSendCommand(wDeviceID, MCI_CLOSE, 0, (DWORD)NULL);
+	memset (&format, 0, sizeof(format));
+	format.wFormatTag = WAVE_FORMAT_PCM;
+    format.nChannels = 2;
+    format.wBitsPerSample = 16;
+    format.nSamplesPerSec = 44100;
+    format.nBlockAlign = format.nChannels * format.wBitsPerSample / 8;
+    format.cbSize = 0;
+    format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+
+	memset (&dsbuf, 0, sizeof(dsbuf));
+	dsbuf.dwSize = sizeof(DSBUFFERDESC);
+	dsbuf.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPOSITIONNOTIFY;
+	dsbuf.dwBufferBytes = format.nAvgBytesPerSec;
+	dsbuf.lpwfxFormat = &format;
+
+	if (DS_OK != pDS->lpVtbl->CreateSoundBuffer(pDS, &dsbuf, &pDSBufCD, NULL))
+	{
+		Con_Printf("CDAudio_Init: CreateSoundBuffer failed.\n");
 		return -1;
-    }
+	}
+
+	pDSBufCD->lpVtbl->QueryInterface(pDSBufCD, &IID_IDirectSoundNotify, &pDSBufCDNotify);
+
+	gCDBufSize = dsbuf.dwBufferBytes;
+
+	cdPlayingFinishedEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
+	cdStopEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 
 	for (n = 0; n < 100; n++)
 		remap[n] = n;
+
 	initialized = true;
 	enabled = true;
 
 	if (CDAudio_GetAudioDiskInfo())
 	{
-		Con_Printf("CDAudio_Init: No CD in player.\n");
+		Con_Printf("CDAudio_Init: No tracks found.\n");
 		cdValid = false;
 	}
 
@@ -472,6 +604,27 @@ void CDAudio_Shutdown(void)
 	if (!initialized)
 		return;
 	CDAudio_Stop();
-	if (mciSendCommand(wDeviceID, MCI_CLOSE, MCI_WAIT, (DWORD)NULL))
-		Con_DPrintf("CDAudio_Shutdown: MCI_CLOSE failed\n");
+	CDAudio_WaitForFinish();
+	
+	if (pDSBufCDNotify)
+	{
+		pDSBufCDNotify->lpVtbl->Release(pDSBufCDNotify);
+		pDSBufCDNotify = NULL;
+	}
+	if (pDSBufCD)
+	{
+		pDSBufCD->lpVtbl->Stop(pDSBufCD);
+		pDSBufCD->lpVtbl->Release(pDSBufCD);
+		pDSBufCD = NULL;
+	}
+	if (cdPlayingFinishedEvent)
+	{
+		CloseHandle(cdPlayingFinishedEvent);
+		cdPlayingFinishedEvent = NULL;
+	}
+	if (cdStopEvent)
+	{
+		CloseHandle(cdStopEvent);
+		cdStopEvent = NULL;
+	}
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="windows-1250"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="oggvorbis.MDd"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="xiph\include"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="libogg_static.lib libvorbis_static.lib libvorbisfile_static.lib"
+		AdditionalLibraryDirectories="&quot;xiph\lib\ogg\VS2008\MDd&quot;;&quot;xiph\lib\vorbis\VS2008\MDd&quot;;&quot;xiph\lib\vorbisfile\VS2008\MDd&quot;"
+	/>
+</VisualStudioPropertySheet>

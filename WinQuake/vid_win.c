@@ -2809,8 +2809,6 @@ MAIN WINDOW
 ===================================================================
 */
 
-LONG CDAudio_MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 /* main window procedure */
 LONG WINAPI MainWndProc (
     HWND    hWnd,
@@ -3023,10 +3021,6 @@ LONG WINAPI MainWndProc (
 					Sys_Quit ();
 				}
 			}
-			break;
-
-		case MM_MCINOTIFY:
-            lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
 			break;
 
 		default:
