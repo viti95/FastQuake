@@ -28,7 +28,6 @@ void 	FakeMGL_DIB_registerFullScreenWindow(HWND hwndFullScreen);
 bool	FakeMGL_DIB_destroyDC(FakeMGLDC_DIB *dc);
 void	FakeMGL_DIB_appActivate(FakeMGLDC_DIB *winDC,bool active);
 void 	FakeMGL_DIB_setPalette(FakeMGLDC_DIB *dc,palette_t *pal,m_int numColors,m_int startIndex);
-void	FakeMGL_DIB_realizePalette(FakeMGLDC_DIB *dc,m_int numColors,m_int startIndex);
 bool	FakeMGL_DIB_activatePalette(FakeMGLDC_DIB *dc,bool unrealize);
 m_int 	FakeMGL_DIB_registerDriver(const char *name,void *driver);
 bool	FakeMGL_DIB_initWindowed();
@@ -43,7 +42,6 @@ void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dst,FakeMGLDC_DIB *src,m_int left,m
 bool	FakeMGL_FULL_destroyDC(FakeMGLDC_FULL *dc);
 void	FakeMGL_FULL_appActivate(FakeMGLDC_FULL *winDC,bool active);
 void 	FakeMGL_FULL_setPalette(FakeMGLDC_FULL *dc,palette_t *pal,m_int numColors,m_int startIndex);
-void	FakeMGL_FULL_realizePalette(FakeMGLDC_FULL *dc,m_int numColors,m_int startIndex);
 bool	FakeMGL_FULL_activatePalette(FakeMGLDC_FULL *dc,bool unrealize);
 m_int 	FakeMGL_FULL_registerDriver(const char *name,void *driver);
 void 	FakeMGL_FULL_detectGraph(m_int *driver,m_int *mode);
