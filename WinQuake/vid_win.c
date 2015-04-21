@@ -1058,14 +1058,14 @@ void	VID_SetPalette (unsigned char *palette)
 		if (mgldcf)
 		{
 			FakeMGL_FULL_setPalette(mgldcf, pal, 256, 0);
-			FakeMGL_FULL_realizePalette(mgldcf, 256, 0, false);
+			FakeMGL_FULL_realizePalette(mgldcf, 256, 0);
 		}
 		else if (mgldca)
 		{
 			FakeMGL_DIB_setPalette(mgldca, pal, 256, 0);
-			FakeMGL_DIB_realizePalette(mgldca, 256, 0, false);
+			FakeMGL_DIB_realizePalette(mgldca, 256, 0);
 			FakeMGL_DIB_setPalette(mgldcb, pal, 256, 0);
-			FakeMGL_DIB_realizePalette(mgldcb, 256, 0, false);
+			FakeMGL_DIB_realizePalette(mgldcb, 256, 0);
 		}
 	}
 

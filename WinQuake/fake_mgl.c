@@ -277,19 +277,19 @@ void 	FakeMGL_FULL_setPalette(FakeMGLDC_FULL *dc,palette_t *pal,m_int numColors,
 }
 
 
-void	FakeMGL_DIB_realizePalette(FakeMGLDC_DIB *dc,m_int numColors,m_int startIndex,m_int waitVRT)
+void	FakeMGL_DIB_realizePalette(FakeMGLDC_DIB *dc,m_int numColors,m_int startIndex)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
-	MGL_realizePalette(mdc, numColors, startIndex, waitVRT);
+	MGL_realizePalette(mdc, numColors, startIndex, false);
 }
 
 
-void	FakeMGL_FULL_realizePalette(FakeMGLDC_FULL *dc,m_int numColors,m_int startIndex,m_int waitVRT)
+void	FakeMGL_FULL_realizePalette(FakeMGLDC_FULL *dc,m_int numColors,m_int startIndex)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
-	MGL_realizePalette(mdc, numColors, startIndex, waitVRT);
+	MGL_realizePalette(mdc, numColors, startIndex, false);
 }
 
 
