@@ -96,8 +96,8 @@ unsigned char	vid_curpal[256*3];
 unsigned short	d_8to16table[256];
 
 int     driver = grDETECT,mode;
-FakeMGLDC_DIB	*mgldcd = NULL;
-FakeMGLDC_FULL	*mgldcf = NULL;
+FakeMGLDC_DIB	*mgldc = NULL;
+FakeMGLDC_FULL	*windc = NULL;
 
 typedef struct {
 	modestate_t	type;
@@ -574,16 +574,16 @@ char *VID_GetExtModeDescription (int mode)
 
 void DestroyMGLDC (void)
 {
-	if (mgldcf)
+	if (windc)
 	{
-		FakeMGL_FULL_destroyDC(mgldcf);
-		mgldcf = NULL;
+		FakeMGL_FULL_destroyDC(windc);
+		windc = NULL;
 	}
 
-	if (mgldcd)
+	if (mgldc)
 	{
-		FakeMGL_DIB_destroyDC(mgldcd);
-		mgldcd = NULL;
+		FakeMGL_DIB_destroyDC(mgldc);
+		mgldc = NULL;
 	}
 }
 
@@ -695,7 +695,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	ReleaseDC(mainwindow, hdc);
 
 	/* Create the MGL window DC and the MGL memory DC */
-	if (!FakeMGL_DIB_createWindowedDC(mainwindow,DIBWidth,DIBHeight,&mgldcd))
+	if (!FakeMGL_DIB_createWindowedDC(mainwindow,DIBWidth,DIBHeight,&mgldc))
 		FakeMGL_fail();
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
@@ -724,7 +724,7 @@ qboolean VID_SetFullscreenMode (int modenum)
 
 	mode = modelist[modenum].modenum;
 
-	if ((mgldcf = createDisplayDC ()) == NULL)
+	if ((windc = createDisplayDC ()) == NULL)
 	{
 		return false;
 	}
@@ -939,10 +939,10 @@ void VID_LockBuffer (void)
 	if (lockcount > 1)
 		return;
 
-	if (mgldcd)
-		FakeMGL_DIB_lock(mgldcd, &surface, &bytesPerLine);
-	else if (mgldcf)
-		FakeMGL_FULL_lock(mgldcf, &surface, &bytesPerLine);
+	if (mgldc)
+		FakeMGL_DIB_lock(mgldc, &surface, &bytesPerLine);
+	else if (windc)
+		FakeMGL_FULL_lock(windc, &surface, &bytesPerLine);
 
 	// Update surface pointer for linear access modes
 	vid.buffer = vid.conbuffer = vid.direct = surface;
@@ -990,7 +990,7 @@ int VID_ForceUnlockedAndReturnState (void)
 
 	lk = lockcount;
 
-	if (mgldcd)
+	if (mgldc)
 	{
 		lockcount = 0;
 	}
@@ -1007,7 +1007,7 @@ int VID_ForceUnlockedAndReturnState (void)
 void VID_ForceLockState (int lk)
 {
 
-	if (!mgldcd && lk)
+	if (!mgldc && lk)
 	{
 		lockcount = 0;
 		VID_LockBuffer ();
@@ -1052,13 +1052,13 @@ void	VID_SetPalette (unsigned char *palette)
 			pal[i].blue = palette[i*3+2];
 		}
 
-		if (mgldcf)
+		if (windc)
 		{
-			FakeMGL_FULL_setPalette(mgldcf, pal, 256, 0);
+			FakeMGL_FULL_setPalette(windc, pal, 256, 0);
 		}
-		else if (mgldcd)
+		else if (mgldc)
 		{
-			FakeMGL_DIB_setPalette(mgldcd, pal, 256, 0);
+			FakeMGL_DIB_setPalette(mgldc, pal, 256, 0);
 		}
 	}
 
@@ -1368,10 +1368,10 @@ void FlipScreen(vrect_t *rects)
 
 	if (DDActive)
 	{
-		if (mgldcf)
+		if (windc)
 		{
 			// We have a flipping surface, so do a hard page flip
-			FakeMGL_FULL_flipScreen(mgldcf, waitVRT);
+			FakeMGL_FULL_flipScreen(windc, waitVRT);
 		}
 	}
 	else
@@ -1380,13 +1380,13 @@ void FlipScreen(vrect_t *rects)
 
 		hdcScreen = GetDC(mainwindow);
 
-		if (mgldcd)
+		if (mgldc)
 		{
-			FakeMGL_DIB_setWinDC(mgldcd,hdcScreen);
+			FakeMGL_DIB_setWinDC(mgldc,hdcScreen);
 
 			while (rects)
 			{
-				FakeMGL_DIB_bitBltCoord(mgldcd,
+				FakeMGL_DIB_bitBltCoord(mgldc,
 					rects->x, rects->y,
 					rects->x + rects->width, rects->y + rects->height,
 					rects->x, rects->y, MGL_REPLACE_MODE);
@@ -1582,10 +1582,10 @@ void AppActivate(BOOL fActive, BOOL minimize)
 
 // messy, but it seems to work
 
-	if (mgldcf)
-		FakeMGL_FULL_appActivate(mgldcf, ActiveApp);
-	else if (mgldcd)
-		FakeMGL_DIB_appActivate(mgldcd, ActiveApp);
+	if (windc)
+		FakeMGL_FULL_appActivate(windc, ActiveApp);
+	else if (mgldc)
+		FakeMGL_DIB_appActivate(mgldc, ActiveApp);
 
 	if (vid_initialized)
 	{
@@ -1793,10 +1793,10 @@ LONG WINAPI MainWndProc (
 
 			if (!in_mode_set)
 			{
-				if (mgldcf)
-					FakeMGL_FULL_activatePalette(mgldcf,true);
-				else if (mgldcd)
-						FakeMGL_DIB_activatePalette(mgldcd,true);
+				if (windc)
+					FakeMGL_FULL_activatePalette(windc,true);
+				else if (mgldc)
+						FakeMGL_DIB_activatePalette(mgldc,true);
 
 				VID_SetPalette(vid_curpal);
 			}
@@ -1898,8 +1898,8 @@ LONG WINAPI MainWndProc (
 
 			if (vid_initialized && !in_mode_set && !Minimized)
 			{
-				if (mgldcf && FakeMGL_FULL_activatePalette(mgldcf,false) ||
-					mgldcd && FakeMGL_DIB_activatePalette(mgldcd,false))
+				if (windc && FakeMGL_FULL_activatePalette(windc,false) ||
+					mgldc && FakeMGL_DIB_activatePalette(mgldc,false))
 				{
 					VID_SetPalette (vid_curpal);
 					InvalidateRect (mainwindow, NULL, false);
