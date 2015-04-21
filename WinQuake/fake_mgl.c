@@ -26,19 +26,25 @@ m_int 	FakeMGL_result(void)
 }
 
 
-m_int 	FakeMGL_registerDriver(const char *name,void *driver)
+m_int 	FakeMGL_FULL_registerDriver(const char *name,void *driver)
 {
 	return MGL_registerDriver(name, driver);
 }
 
 
-void 	FakeMGL_detectGraph(m_int *driver,m_int *mode)
+m_int 	FakeMGL_DIB_registerDriver(const char *name,void *driver)
+{
+	return MGL_registerDriver(name, driver);
+}
+
+
+void 	FakeMGL_FULL_detectGraph(m_int *driver,m_int *mode)
 {
 	MGL_detectGraph(driver, mode);
 }
 
 
-uchar *	FakeMGL_availableModes(void)
+uchar *	FakeMGL_FULL_availableModes(void)
 {
 	// modes are 0xFF-terminated
 	uchar *result = MGL_availableModes();
@@ -47,20 +53,20 @@ uchar *	FakeMGL_availableModes(void)
 }
 
 
-m_int	FakeMGL_modeResolution(m_int mode,m_int *xRes,m_int *yRes,m_int *bitsPerPixel)
+m_int	FakeMGL_FULL_modeResolution(m_int mode,m_int *xRes,m_int *yRes,m_int *bitsPerPixel)
 {
 	return MGL_modeResolution(mode, xRes, yRes, bitsPerPixel);
 }
 
 
-bool	FakeMGL_init(m_int *driver,m_int *mode)
+bool	FakeMGL_FULL_init(m_int *driver,m_int *mode)
 {
 	/* Initialise the MGL for fullscreen output */
 	return MGL_init(driver, mode, "");
 }
 
 
-bool	FakeMGL_initWindowed()
+bool	FakeMGL_DIB_initWindowed()
 {
 	/* Initialise the MGL just for Windowed output, not full screen */
 	return MGL_initWindowed("");
@@ -73,7 +79,7 @@ int wrapStaveState(MGLDC *dc,m_int flags)
 	return fakeStaveState(flags);
 }
 
-void	FakeMGL_setSuspendAppCallback(FakeMGL_suspend_cb_t staveState)
+void	FakeMGL_FULL_setSuspendAppCallback(FakeMGL_suspend_cb_t staveState)
 {
 	/*---------------------------------------------------------------------------
 	* Set a fullscreen suspend application callback function. This is used in
@@ -86,7 +92,17 @@ void	FakeMGL_setSuspendAppCallback(FakeMGL_suspend_cb_t staveState)
 }
 
 
-bool	FakeMGL_changeDisplayMode(m_int mode)
+bool	FakeMGL_FULL_changeDisplayMode(m_int mode)
+{
+	/* Change the active display mode. You must destroy all display device
+	* contexts before calling this function, and re-create them again with
+	* the new display mode. Does not affect any event handling hooks.
+	*/
+	return MGL_changeDisplayMode(mode);
+}
+
+
+bool	FakeMGL_DIB_changeDisplayMode(m_int mode)
 {
 	/* Change the active display mode. You must destroy all display device
 	* contexts before calling this function, and re-create them again with
@@ -108,7 +124,7 @@ static FakeMGLDC * makeFakeDC(MGLDC *realDC)
 		return NULL;
 }
 
-FakeMGLDC	* FakeMGL_createFullscreenDC()
+FakeMGLDC	* FakeMGL_FULL_createFullscreenDC()
 {
 	FakeMGLDC *fakedc = makeFakeDC(MGL_createDisplayDC(2));
 
@@ -119,7 +135,7 @@ FakeMGLDC	* FakeMGL_createFullscreenDC()
 	return fakedc;
 }
 
-void FakeMGL_flipScreen(FakeMGLDC *dc, int waitVRT)
+void FakeMGL_FULL_flipScreen(FakeMGLDC *dc, int waitVRT)
 {
 	if (dc)
 	{
@@ -131,7 +147,7 @@ void FakeMGL_flipScreen(FakeMGLDC *dc, int waitVRT)
 }
 
 
-void FakeMGL_makeCurrentDC(FakeMGLDC *dc)
+void FakeMGL_FULL_makeCurrentDC(FakeMGLDC *dc)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
@@ -139,13 +155,21 @@ void FakeMGL_makeCurrentDC(FakeMGLDC *dc)
 }
 
 
-FakeMGLDC 	* FakeMGL_createMemoryDC(m_int xSize,m_int ySize)
+void FakeMGL_DIB_makeCurrentDC(FakeMGLDC *dc)
+{
+	MGLDC *mdc = dc ? dc->mgldc : NULL;
+
+	MGL_makeCurrentDC(mdc);
+}
+
+
+FakeMGLDC 	* FakeMGL_DIB_createMemoryDC(m_int xSize,m_int ySize)
 {
 	return makeFakeDC(MGL_createMemoryDC(xSize, ySize, 8, NULL));
 }
 
 
-void	FakeMGL_setAppInstance(MGL_HINSTANCE hInstApp)
+void	FakeMGL_DIB_setAppInstance(MGL_HINSTANCE hInstApp)
 {
 	MGL_setAppInstance(hInstApp);
 }
@@ -170,7 +194,7 @@ bool	FakeMGL_destroyDC(FakeMGLDC *dc)
 }
 
 
-void 	FakeMGL_registerFullScreenWindow(HWND hwndFullScreen)
+void 	FakeMGL_DIB_registerFullScreenWindow(HWND hwndFullScreen)
 {
 	/* Function to register a fullscreen window with the MGL. If you wish
 	 * for the MGL to use your own window for fullscreen modes, you can
@@ -189,13 +213,26 @@ void 	FakeMGL_registerFullScreenWindow(HWND hwndFullScreen)
 }
 
 
-FakeMGLDC	* FakeMGL_createWindowedDC(MGL_HWND hwnd)
+FakeMGLDC	* FakeMGL_DIB_createWindowedDC(MGL_HWND hwnd)
 {
 	return makeFakeDC(MGL_createWindowedDC(hwnd));
 }
 
 
-void 	FakeMGL_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine)
+void 	FakeMGL_FULL_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine)
+{
+	MGL_beginDirectAccess();
+	if (dc)
+	{
+		if (surface)
+			*surface = dc->mgldc->surface;
+		if (bytesPerLine)
+			*bytesPerLine = dc->mgldc->mi.bytesPerLine;
+	}
+}
+
+
+void 	FakeMGL_DIB_lock(FakeMGLDC *dc, void **surface, int *bytesPerLine)
 {
 	MGL_beginDirectAccess();
 	if (dc)
@@ -230,7 +267,7 @@ void	FakeMGL_realizePalette(FakeMGLDC *dc,m_int numColors,m_int startIndex,m_int
 }
 
 
-void 	FakeMGL_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
+void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
 {
 	MGLDC *mdst = dst ? dst->mgldc : NULL;
 	MGLDC *msrc = src ? src->mgldc : NULL;
@@ -239,7 +276,7 @@ void 	FakeMGL_bitBltCoord(FakeMGLDC *dst,FakeMGLDC *src,m_int left,m_int top,m_i
 }
 
 
-bool	FakeMGL_setWinDC(FakeMGLDC *dc,MGL_HDC hdc)
+bool	FakeMGL_DIB_setWinDC(FakeMGLDC *dc,MGL_HDC hdc)
 {
 	MGLDC *mdc = dc ? dc->mgldc : NULL;
 
