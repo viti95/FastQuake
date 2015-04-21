@@ -695,10 +695,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	ReleaseDC(mainwindow, hdc);
 
 	/* Create the MGL window DC and the MGL memory DC */
-	if ((mgldca = FakeMGL_DIB_createWindowedDC(mainwindow)) == NULL)
-		FakeMGL_fail();
-
-	if ((mgldcb = FakeMGL_DIB_createMemoryDC(DIBWidth,DIBHeight)) == NULL)
+	if (!FakeMGL_DIB_createWindowedDC(mainwindow,DIBWidth,DIBHeight,&mgldca, &mgldcb))
 		FakeMGL_fail();
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
