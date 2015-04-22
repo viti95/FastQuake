@@ -4433,6 +4433,18 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\test.c"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_end.c"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_sdl.c"
+				>
+			</File>
+			<File
 				RelativePath="vid_win.c"
 				>
 				<FileConfiguration
@@ -4898,6 +4910,38 @@
 			</File>
 			<File
 				RelativePath="sys.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_config.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_doomkeys.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_end.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_font.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_largefont.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_main.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_sdl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\txt_smallfont.h"
 				>
 			</File>
 			<File
