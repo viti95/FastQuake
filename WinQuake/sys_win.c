@@ -441,6 +441,10 @@ void Sys_Printf (char *fmt, ...)
 
 void Sys_Quit (void)
 {
+	byte	screen[80*25*2];
+	byte	*d;
+	char			ver[6];
+	int			i;
 
 	VID_ForceUnlockedAndReturnState ();
 
@@ -454,6 +458,22 @@ void Sys_Quit (void)
 
 // shut down QHOST hooks if necessary
 	DeinitConProc ();
+
+	if (!isDedicated)
+	{
+		// load the sell screen
+		if (registered.value)
+			d = COM_LoadHunkFile ("end2.bin"); 
+		else
+			d = COM_LoadHunkFile ("end1.bin"); 
+		if (d)
+			memcpy (screen, d, sizeof(screen));
+
+	// write the version number directly to the end screen
+		sprintf (ver, " v%4.2f", VERSION);
+		for (i=0 ; i<6 ; i++)
+			screen[0*80*2 + 72*2 + i*2] = ver[i];
+	}
 
 	exit (0);
 }
