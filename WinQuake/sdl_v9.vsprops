@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="windows-1250"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="sdl.MT"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="sdl\include"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="sdl.lib"
+		AdditionalLibraryDirectories="&quot;sdl\lib\VS2008\MT&quot;"
+	/>
+</VisualStudioPropertySheet>
