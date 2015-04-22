@@ -30,20 +30,6 @@
 #define inline __inline
 #endif
 
-// Event callback function type: a function of this type can be used
-// to intercept events in the textscreen event processing loop.  
-// Returning 1 will cause the event to be eaten; the textscreen code
-// will not see it.
-
-typedef int (*TxtSDLEventCallbackFunc)(SDL_Event *event, void *user_data);
-
-// Set a callback function to call in the SDL event loop.  Useful for
-// intercepting events.  Pass callback=NULL to clear an existing
-// callback function.
-// user_data is a void pointer to be passed to the callback function.
-
-void TXT_SDL_SetEventCallback(TxtSDLEventCallbackFunc callback, void *user_data);
-
 
 typedef struct
 {
@@ -57,10 +43,6 @@ typedef struct
 #include "txt_font.h"
 #include "txt_largefont.h"
 #include "txt_smallfont.h"
-
-// Time between character blinks in ms
-
-#define BLINK_PERIOD 250
 
 static SDL_Surface *screen;
 static SDL_Surface *screenbuffer;
@@ -270,7 +252,6 @@ int TXT_Init(void)
                                         TXT_SCREEN_H * font->h,
                                         8, 0, 0, 0, 0);
     SDL_SetColors(screenbuffer, ega_colors, 0, 16);
-    SDL_EnableUNICODE(1);
 
     screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
     memset(screendata, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
@@ -310,18 +291,6 @@ static inline void UpdateCharacter(int x, int y)
 
     fg = p[1] & 0xf;
     bg = (p[1] >> 4) & 0xf;
-
-    if (bg & 0x8)
-    {
-        // blinking
-
-        bg &= ~0x8;
-
-        if (((SDL_GetTicks() / BLINK_PERIOD) % 2) == 0)
-        {
-            fg = bg;
-        }
-    }
 
     // How many bytes per line?
     bytes = (font->w + 7) / 8;
