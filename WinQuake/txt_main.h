@@ -18,11 +18,6 @@
 #ifndef TXT_MAIN_H
 #define TXT_MAIN_H
 
-// For the moment, txt_sdl.c is the only implementation of the base 
-// text mode screen API:
-
-#include "txt_sdl.h"
-
 // textscreen key values:
 // Key values are difficult because we have to support multiple conflicting
 // address spaces.
@@ -117,13 +112,6 @@ void TXT_UpdateScreen(void);
 // Read a character from the keyboard
 int TXT_GetChar(void);
 
-// Read the current state of modifier keys that are held down.
-int TXT_GetModifierState(txt_modifier_t mod);
-
-// Provides a short description of a key code, placing into the 
-// provided buffer.
-void TXT_GetKeyDescription(int key, char *buf, size_t buf_len);
-
 // Retrieve the current position of the mouse
 void TXT_GetMousePosition(int *x, int *y);
 
@@ -131,24 +119,8 @@ void TXT_GetMousePosition(int *x, int *y);
 // Optional timeout in ms (timeout == 0 : sleep forever)
 void TXT_Sleep(int timeout);
 
-// Controls whether keys are returned from TXT_GetChar based on keyboard
-// mapping, or raw key code.
-void TXT_EnableKeyMapping(int enable);
-
 // Set the window title of the window containing the text mode screen
 void TXT_SetWindowTitle(char *title);
-
-// Safe string copy.
-void TXT_StringCopy(char *dest, const char *src, size_t dest_len);
-
-// Safe string concatenate.
-void TXT_StringConcat(char *dest, const char *src, size_t dest_len);
-
-// Safe version of vsnprintf().
-int TXT_vsnprintf(char *buf, size_t buf_len, const char *s, va_list args);
-
-// Safe version of snprintf().
-int TXT_snprintf(char *buf, size_t buf_len, const char *s, ...);
 
 #endif /* #ifndef TXT_MAIN_H */
 

@@ -4909,10 +4909,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\txt_config.h"
-				>
-			</File>
-			<File
 				RelativePath=".\txt_doomkeys.h"
 				>
 			</File>

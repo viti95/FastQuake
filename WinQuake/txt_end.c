@@ -36,7 +36,7 @@ static void I_InitWindowTitle(void)
 
     //buf = M_StringJoin(window_title, " - ", PACKAGE_STRING, NULL);
 	buf = "PLACEHOLDER";
-    SDL_WM_SetCaption(buf, NULL);
+    TXT_SetWindowTitle(buf);
     //free(buf);
 }
 
