@@ -1039,6 +1039,7 @@ del "$(IntDir)%(Filename).spp"
     <ClInclude Include="txt_largefont.h" />
     <ClInclude Include="txt_main.h" />
     <ClInclude Include="txt_sdl.h" />
+    <ClInclude Include="txt_smallfont.h" />
     <ClInclude Include="vid.h" />
     <ClInclude Include="view.h" />
     <ClInclude Include="wad.h" />

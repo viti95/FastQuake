@@ -449,6 +449,9 @@
     <ClInclude Include="txt_sdl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="txt_smallfont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="qe3.ico">
