@@ -349,64 +349,26 @@ static int LimitToRange(int val, int min, int max)
     }
 }
 
-static void TXT_UpdateScreenArea(int x, int y, int w, int h)
+void TXT_UpdateScreen(void)
 {
     SDL_Rect rect;
-    int x1, y1;
-    int x_end;
-    int y_end;
+    int x, y;
 
-    x_end = LimitToRange(x + w, 0, TXT_SCREEN_W);
-    y_end = LimitToRange(y + h, 0, TXT_SCREEN_H);
-    x = LimitToRange(x, 0, TXT_SCREEN_W);
-    y = LimitToRange(y, 0, TXT_SCREEN_H);
-
-    for (y1=y; y1<y_end; ++y1)
+    for (y=0; y<TXT_SCREEN_H; ++y)
     {
-        for (x1=x; x1<x_end; ++x1)
+        for (x=0; x<TXT_SCREEN_W; ++x)
         {
-            UpdateCharacter(x1, y1);
+            UpdateCharacter(x, y);
         }
     }
 
-    rect.x = x * font->w;
-    rect.y = y * font->h;
-    rect.w = (x_end - x) * font->w;
-    rect.h = (y_end - y) * font->h;
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = TXT_SCREEN_W * font->w;
+    rect.h = TXT_SCREEN_H * font->h;
 
     SDL_BlitSurface(screenbuffer, &rect, screen, &rect);
     SDL_UpdateRects(screen, 1, &rect);
-}
-
-void TXT_UpdateScreen(void)
-{
-    TXT_UpdateScreenArea(0, 0, TXT_SCREEN_W, TXT_SCREEN_H);
-}
-
-static void TXT_GetMousePosition(int *x, int *y)
-{
-    SDL_GetMouseState(x, y);
-
-    *x /= font->w;
-    *y /= font->h;
-}
-
-static int MouseHasMoved(void)
-{
-    static int last_x = 0, last_y = 0;
-    int x, y;
-
-    TXT_GetMousePosition(&x, &y);
-
-    if (x != last_x || y != last_y)
-    {
-        last_x = x; last_y = y;
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
 }
 
 
@@ -438,8 +400,7 @@ void TXT_WaitForChar(void)
                 return;
 
             case SDL_MOUSEMOTION:
-                if (MouseHasMoved())
-					break;
+				break;
 
             default:
                 break;
