@@ -50,21 +50,25 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="oggd_v12.props" />
+    <Import Project="sdld_v12.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="oggd_v12.props" />
+    <Import Project="sdld_v12.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release GL|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="ogg_v12.props" />
+    <Import Project="sdl_v12.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="ogg_v12.props" />
+    <Import Project="sdl_v12.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -587,6 +591,7 @@
     <ClCompile Include="sys_win.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
     </ClCompile>
+    <ClCompile Include="txt_sdl.c" />
     <ClCompile Include="vid_win.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MaxSpeed</Optimization>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release GL|Win32'">true</ExcludedFromBuild>
@@ -1029,6 +1034,11 @@ del "$(IntDir)%(Filename).spp"
     <ClInclude Include="sound.h" />
     <ClInclude Include="spritegn.h" />
     <ClInclude Include="sys.h" />
+    <ClInclude Include="txt_doomkeys.h" />
+    <ClInclude Include="txt_font.h" />
+    <ClInclude Include="txt_largefont.h" />
+    <ClInclude Include="txt_main.h" />
+    <ClInclude Include="txt_sdl.h" />
     <ClInclude Include="vid.h" />
     <ClInclude Include="view.h" />
     <ClInclude Include="wad.h" />

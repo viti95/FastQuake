@@ -270,13 +270,7 @@
     <ClCompile Include="zone.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cd_dshow.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cd_bass.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="snd_bass.c">
+    <ClCompile Include="txt_sdl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -438,6 +432,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="zone.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="txt_main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="txt_font.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="txt_largefont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="txt_doomkeys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="txt_sdl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
