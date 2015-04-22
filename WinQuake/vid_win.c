@@ -48,7 +48,7 @@ static qboolean	vid_initialized = false, vid_palettized;
 static int		lockcount;
 static qboolean	force_minimized, in_mode_set, force_mode_set;
 static int		windowed_mouse;
-static qboolean	palette_changed, syscolchg, vid_mode_set, hide_window, pal_is_nostatic;
+static qboolean	palette_changed, syscolchg, hide_window, pal_is_nostatic;
 static HICON	hIcon;
 
 viddef_t	vid;				// global video state
@@ -388,25 +388,6 @@ FakeMGLDC_FULL *createDisplayDC()
 
 void VID_InitMGLDIB (HINSTANCE hInstance)
 {
-	WNDCLASS		wc;
-
-	hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_ICON2));
-
-	/* Register the frame class */
-    wc.style         = 0;
-    wc.lpfnWndProc   = (WNDPROC)MainWndProc;
-    wc.cbClsExtra    = 0;
-    wc.cbWndExtra    = 0;
-    wc.hInstance     = hInstance;
-    wc.hIcon         = 0;
-    wc.hCursor       = LoadCursor (NULL,IDC_ARROW);
-	wc.hbrBackground = NULL;
-    wc.lpszMenuName  = 0;
-    wc.lpszClassName = "WinQuake";
-
-    if (!RegisterClass (&wc) )
-		Sys_Error ("Couldn't register window class");
-
 	/* Find the size for the DIB window */
 	/* Initialise the MGL for windowed operation */
 	FakeMGL_DIB_setAppInstance(hInstance);
@@ -620,39 +601,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	DIBWidth = modelist[modenum].width;
 	DIBHeight = modelist[modenum].height;
 
-	WindowStyle = WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU |
-				  WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPSIBLINGS |
-				  WS_CLIPCHILDREN;
 	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
-
-// the first time we're called to set the mode, create the window we'll use
-// for the rest of the session
-	if (!vid_mode_set)
-	{
-		mainwindow = CreateWindow (
-			 "WinQuake",
-			 "WinQuake",
-			 WindowStyle,
-			 0, 0,
-			 WindowRect.right - WindowRect.left,
-			 WindowRect.bottom - WindowRect.top,
-			 NULL,
-			 NULL,
-			 global_hInstance,
-			 NULL);
-
-		if (!mainwindow)
-			Sys_Error ("Couldn't create DIB window");
-
-	// tell MGL to use this window for fullscreen modes
-		FakeMGL_DIB_registerFullScreenWindow (mainwindow);
-
-		vid_mode_set = true;
-	}
-	else
-	{
-		SetWindowLong(mainwindow, GWL_STYLE, WindowStyle | WS_VISIBLE);
-	}
 
 	if (!SetWindowPos (mainwindow,
 					   NULL,
@@ -1224,6 +1173,62 @@ void VID_ForceMode_f (void)
 }
 
 
+HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
+{
+	WNDCLASS		wc;
+	HWND			hwnd;
+
+	hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
+
+	/* Register the frame class */
+	wc.style = 0;
+	wc.lpfnWndProc = (WNDPROC) MainWndProc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = hInstance;
+	wc.hIcon = 0;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = NULL;
+	wc.lpszMenuName = 0;
+	wc.lpszClassName = "WinQuake";
+
+	if (!RegisterClass(&wc))
+		Sys_Error("Couldn't register window class");
+
+	WindowStyle = WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU |
+	WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPSIBLINGS |
+	WS_CLIPCHILDREN;
+
+	WindowRect.top = WindowRect.left = 0;
+
+	WindowRect.right = modelist[MODE_WINDOWED].width;
+	WindowRect.bottom = modelist[MODE_WINDOWED].height;
+
+	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
+
+	// create the window we'll use for the rest of the session
+	hwnd = CreateWindow(
+		"WinQuake",
+		"WinQuake",
+		WindowStyle,
+		0, 0,
+		WindowRect.right - WindowRect.left,
+		WindowRect.bottom - WindowRect.top,
+		NULL,
+		NULL,
+		hInstance,
+		NULL);
+
+	if (!hwnd)
+		Sys_Error("Couldn't create DIB window");
+
+	// tell MGL to use this window for fullscreen modes
+	FakeMGL_DIB_registerFullScreenWindow(hwnd);
+
+	return hwnd;
+}
+
+
 void	VID_Init (unsigned char *palette)
 {
 	int		i, bestmatch, bestmatchmetric, t, dr, dg, db;
@@ -1252,6 +1257,8 @@ void	VID_Init (unsigned char *palette)
 	Cmd_AddCommand ("vid_windowed", VID_Windowed_f);
 	Cmd_AddCommand ("vid_fullscreen", VID_Fullscreen_f);
 	Cmd_AddCommand ("vid_minimize", VID_Minimize_f);
+
+	mainwindow = InitializeWindow(global_hInstance, global_nCmdShow);
 
 	VID_InitMGLDIB (global_hInstance);
 
