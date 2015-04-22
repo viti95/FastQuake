@@ -23,8 +23,6 @@
 // Display the Endoom screen on shutdown.
 void D_Endoom(void);
 
-#define TXT_MAX_MOUSE_BUTTONS  16
-
 // Screen size
 
 #define TXT_SCREEN_W 80

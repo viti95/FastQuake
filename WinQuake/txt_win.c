@@ -385,25 +385,14 @@ void TXT_WaitForChar(void)
         switch (ev.type)
         {
             case SDL_MOUSEBUTTONDOWN:
-                if (ev.button.button < TXT_MAX_MOUSE_BUTTONS)
-                    return;
-                break;
+				return;
 
             case SDL_KEYDOWN:
                 return;
 
-            case SDL_KEYUP:
-                break;
-
             case SDL_QUIT:
                 // Quit = escape
                 return;
-
-            case SDL_MOUSEMOTION:
-				break;
-
-            default:
-                break;
         }
     }
 }
