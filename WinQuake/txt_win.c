@@ -24,12 +24,26 @@
 
 #include "txt_doomkeys.h"
 
-#include "txt_main.h"
-#include "txt_sdl.h"
+#include "txt.h"
 
 #if defined(_MSC_VER) && !defined(__cplusplus)
 #define inline __inline
 #endif
+
+// Event callback function type: a function of this type can be used
+// to intercept events in the textscreen event processing loop.  
+// Returning 1 will cause the event to be eaten; the textscreen code
+// will not see it.
+
+typedef int (*TxtSDLEventCallbackFunc)(SDL_Event *event, void *user_data);
+
+// Set a callback function to call in the SDL event loop.  Useful for
+// intercepting events.  Pass callback=NULL to clear an existing
+// callback function.
+// user_data is a void pointer to be passed to the callback function.
+
+void TXT_SDL_SetEventCallback(TxtSDLEventCallbackFunc callback, void *user_data);
+
 
 typedef struct
 {

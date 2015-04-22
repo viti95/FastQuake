@@ -21,9 +21,7 @@
 
 #include "quakedef.h"
 #include "winquake.h"
-#include "txt_end.h"
-
-#include "txt_main.h"
+#include "txt.h"
 
 //
 // Call the SDL function to set the window title, based on 

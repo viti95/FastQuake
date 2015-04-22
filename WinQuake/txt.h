@@ -1,4 +1,5 @@
 //
+// Copyright(C) 1993-1996 Id Software, Inc.
 // Copyright(C) 2005-2014 Simon Howard
 //
 // This program is free software; you can redistribute it and/or
@@ -11,12 +12,16 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-//
-// Base interface that abstracts the text mode screen.
+// DESCRIPTION:
+//    Exit text-mode ENDOOM screen.
 //
 
-#ifndef TXT_MAIN_H
-#define TXT_MAIN_H
+
+#ifndef __I_ENDOOM__
+#define __I_ENDOOM__
+
+// Display the Endoom screen on shutdown.
+void D_Endoom(void);
 
 // textscreen key values:
 // Key values are difficult because we have to support multiple conflicting
@@ -36,52 +41,17 @@
 #define TXT_MOUSE_LEFT         (TXT_MOUSE_BASE + 0)
 #define TXT_MOUSE_RIGHT        (TXT_MOUSE_BASE + 1)
 #define TXT_MOUSE_MIDDLE       (TXT_MOUSE_BASE + 2)
-#define TXT_MOUSE_SCROLLUP     (TXT_MOUSE_BASE + 3)
-#define TXT_MOUSE_SCROLLDOWN   (TXT_MOUSE_BASE + 4)
 #define TXT_MAX_MOUSE_BUTTONS  16
-
-#define TXT_KEY_TO_MOUSE_BUTTON(x)                                        \
-        ( (x) >= TXT_MOUSE_BASE                                           \
-       && (x) < TXT_MOUSE_BASE + TXT_MAX_MOUSE_BUTTONS ?                  \
-          (x) - TXT_MOUSE_BASE : -1 )
 
 // Unicode offset. Unicode values from 128 onwards are offset up into
 // this range, so TXT_UNICODE_BASE = Unicode character #128, and so on.
 
 #define TXT_UNICODE_BASE       512
 
-// Convert a key value to a Unicode character:
-
-#define TXT_KEY_TO_UNICODE(x)                                             \
-        ( (x) < 128 ? (x) :                                               \
-          (x) >= TXT_UNICODE_BASE ? ((x) - TXT_UNICODE_BASE + 128) : 0 )
-
 // Screen size
 
 #define TXT_SCREEN_W 80
 #define TXT_SCREEN_H 25
-
-#define TXT_COLOR_BLINKING (1 << 3)
-
-typedef enum
-{
-    TXT_COLOR_BLACK,
-    TXT_COLOR_BLUE,
-    TXT_COLOR_GREEN,
-    TXT_COLOR_CYAN,
-    TXT_COLOR_RED,
-    TXT_COLOR_MAGENTA,
-    TXT_COLOR_BROWN,
-    TXT_COLOR_GREY,
-    TXT_COLOR_DARK_GREY,
-    TXT_COLOR_BRIGHT_BLUE,
-    TXT_COLOR_BRIGHT_GREEN,
-    TXT_COLOR_BRIGHT_CYAN,
-    TXT_COLOR_BRIGHT_RED,
-    TXT_COLOR_BRIGHT_MAGENTA,
-    TXT_COLOR_YELLOW,
-    TXT_COLOR_BRIGHT_WHITE,
-} txt_color_t;
 
 // Modifier keys.
 
@@ -122,5 +92,5 @@ void TXT_Sleep(int timeout);
 // Set the window title of the window containing the text mode screen
 void TXT_SetWindowTitle(char *title);
 
-#endif /* #ifndef TXT_MAIN_H */
+#endif
 

@@ -4433,11 +4433,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\txt_end.c"
+				RelativePath=".\txt.c"
 				>
 			</File>
 			<File
-				RelativePath=".\txt_sdl.c"
+				RelativePath=".\txt_win.c"
 				>
 			</File>
 			<File
@@ -4909,11 +4909,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\txt_doomkeys.h"
+				RelativePath=".\txt.h"
 				>
 			</File>
 			<File
-				RelativePath=".\txt_end.h"
+				RelativePath=".\txt_doomkeys.h"
 				>
 			</File>
 			<File
@@ -4922,14 +4922,6 @@
 			</File>
 			<File
 				RelativePath=".\txt_largefont.h"
-				>
-			</File>
-			<File
-				RelativePath=".\txt_main.h"
-				>
-			</File>
-			<File
-				RelativePath=".\txt_sdl.h"
 				>
 			</File>
 			<File
