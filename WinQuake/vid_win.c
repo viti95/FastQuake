@@ -49,7 +49,6 @@ static int		lockcount;
 static qboolean	force_minimized, in_mode_set, force_mode_set;
 static int		windowed_mouse;
 static qboolean	palette_changed, syscolchg, hide_window, pal_is_nostatic;
-static HICON	hIcon;
 
 viddef_t	vid;				// global video state
 
@@ -654,9 +653,6 @@ qboolean VID_SetWindowedMode (int modenum)
 	vid.aspect = ((float)vid.height / (float)vid.width) *
 				(320.0 / 240.0);
 
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)TRUE, (LPARAM)hIcon);
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)FALSE, (LPARAM)hIcon);
-
 	return true;
 }
 
@@ -688,10 +684,6 @@ qboolean VID_SetFullscreenMode (int modenum)
 // needed because we're not getting WM_MOVE messages fullscreen on NT
 	window_x = 0;
 	window_y = 0;
-
-// set the large icon, so the Quake icon will show up in the taskbar
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)1, (LPARAM)hIcon);
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)0, (LPARAM)hIcon);
 
 // shouldn't be needed, but Kendall needs to let us get the activation
 // message for this not to be needed on NT
@@ -1177,16 +1169,14 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 {
 	WNDCLASS		wc;
 	HWND			hwnd;
-
-	hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
-
+	
 	/* Register the frame class */
 	wc.style = 0;
 	wc.lpfnWndProc = (WNDPROC) MainWndProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
-	wc.hIcon = 0;
+	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName = 0;
