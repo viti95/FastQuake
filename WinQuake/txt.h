@@ -73,17 +73,11 @@ void TXT_Shutdown(void);
 // Get a pointer to the buffer containing the raw screen data.
 unsigned char *TXT_GetScreenData(void);
 
-// Update an area of the screen
-void TXT_UpdateScreenArea(int x, int y, int w, int h);
-
 // Update the whole screen
 void TXT_UpdateScreen(void);
 
 // Read a character from the keyboard
 int TXT_GetChar(void);
-
-// Retrieve the current position of the mouse
-void TXT_GetMousePosition(int *x, int *y);
 
 // Sleep until an event is received or the screen needs updating
 // Optional timeout in ms (timeout == 0 : sleep forever)

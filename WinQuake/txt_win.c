@@ -390,7 +390,7 @@ static int LimitToRange(int val, int min, int max)
     }
 }
 
-void TXT_UpdateScreenArea(int x, int y, int w, int h)
+static void TXT_UpdateScreenArea(int x, int y, int w, int h)
 {
     SDL_Rect rect;
     int x1, y1;
@@ -424,7 +424,7 @@ void TXT_UpdateScreen(void)
     TXT_UpdateScreenArea(0, 0, TXT_SCREEN_W, TXT_SCREEN_H);
 }
 
-void TXT_GetMousePosition(int *x, int *y)
+static void TXT_GetMousePosition(int *x, int *y)
 {
     SDL_GetMouseState(x, y);
 
