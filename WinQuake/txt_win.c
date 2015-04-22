@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "txt_doomkeys.h"
+#include "quakedef.h"
 
 #include "txt.h"
 
@@ -66,9 +66,6 @@ static SDL_Surface *screen;
 static SDL_Surface *screenbuffer;
 static unsigned char *screendata;
 static int key_mapping = 1;
-
-static TxtSDLEventCallbackFunc event_callback;
-static void *event_callback_data;
 
 // Font we are using:
 
@@ -181,7 +178,7 @@ static txt_font_t *FontForName(char *name)
 // 640x480, use the small font.
 //
 
-static void ChooseFont(void)
+static void ChooseTextFont(void)
 {
     const SDL_VideoInfo *info;
     char *env;
@@ -255,7 +252,7 @@ int TXT_Init(void)
         return 0;
     }
 
-    ChooseFont();
+    ChooseTextFont();
 
     // Always create the screen at the native screen depth (bpp=0);
     // some systems nowadays don't seem to support true 8-bit palettized
@@ -281,11 +278,6 @@ int TXT_Init(void)
     // Ignore all mouse motion events
 
 //    SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
-
-    // Repeat key presses so we can hold down arrows to scroll down the
-    // menu, for example. This is what setup.exe does.
-
-    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 
     return 1;
 }
@@ -430,138 +422,6 @@ static void TXT_GetMousePosition(int *x, int *y)
     *y /= font->h;
 }
 
-//
-// Translates the SDL key
-//
-
-static int TranslateKey(SDL_keysym *sym)
-{
-    switch(sym->sym)
-    {
-        case SDLK_LEFT:        return KEY_LEFTARROW;
-        case SDLK_RIGHT:       return KEY_RIGHTARROW;
-        case SDLK_DOWN:        return KEY_DOWNARROW;
-        case SDLK_UP:          return KEY_UPARROW;
-        case SDLK_ESCAPE:      return KEY_ESCAPE;
-        case SDLK_RETURN:      return KEY_ENTER;
-        case SDLK_TAB:         return KEY_TAB;
-        case SDLK_F1:          return KEY_F1;
-        case SDLK_F2:          return KEY_F2;
-        case SDLK_F3:          return KEY_F3;
-        case SDLK_F4:          return KEY_F4;
-        case SDLK_F5:          return KEY_F5;
-        case SDLK_F6:          return KEY_F6;
-        case SDLK_F7:          return KEY_F7;
-        case SDLK_F8:          return KEY_F8;
-        case SDLK_F9:          return KEY_F9;
-        case SDLK_F10:         return KEY_F10;
-        case SDLK_F11:         return KEY_F11;
-        case SDLK_F12:         return KEY_F12;
-        case SDLK_PRINT:       return KEY_PRTSCR;
-
-        case SDLK_BACKSPACE:   return KEY_BACKSPACE;
-        case SDLK_DELETE:      return KEY_DEL;
-
-        case SDLK_PAUSE:       return KEY_PAUSE;
-
-        case SDLK_LSHIFT:
-        case SDLK_RSHIFT:
-                               return KEY_RSHIFT;
-
-        case SDLK_LCTRL:
-        case SDLK_RCTRL:
-                               return KEY_RCTRL;
-
-        case SDLK_LALT:
-        case SDLK_RALT:
-        case SDLK_LMETA:
-        case SDLK_RMETA:
-                               return KEY_RALT;
-
-        case SDLK_CAPSLOCK:    return KEY_CAPSLOCK;
-        case SDLK_SCROLLOCK:   return KEY_SCRLCK;
-
-        case SDLK_HOME:        return KEY_HOME;
-        case SDLK_INSERT:      return KEY_INS;
-        case SDLK_END:         return KEY_END;
-        case SDLK_PAGEUP:      return KEY_PGUP;
-        case SDLK_PAGEDOWN:    return KEY_PGDN;
-
-		default:               break;
-    }
-
-    // Returned value is different, depending on whether key mapping is
-    // enabled.  Key mapping is preferable most of the time, for typing
-    // in text, etc.  However, when we want to read raw keyboard codes
-    // for the setup keyboard configuration dialog, we want the raw
-    // key code.
-
-    if (key_mapping)
-    {
-        // Unicode characters beyond the ASCII range need to be
-        // mapped up into textscreen's Unicode range.
-
-        if (sym->unicode < 128)
-        {
-            return sym->unicode;
-        }
-        else
-        {
-            return sym->unicode - 128 + TXT_UNICODE_BASE;
-        }
-    }
-    else
-    {
-        // Keypad mapping is only done when we want a raw value:
-        // most of the time, the keypad should behave as it normally
-        // does.
-
-        switch (sym->sym)
-        {
-            case SDLK_KP0:         return KEYP_0;
-            case SDLK_KP1:         return KEYP_1;
-            case SDLK_KP2:         return KEYP_2;
-            case SDLK_KP3:         return KEYP_3;
-            case SDLK_KP4:         return KEYP_4;
-            case SDLK_KP5:         return KEYP_5;
-            case SDLK_KP6:         return KEYP_6;
-            case SDLK_KP7:         return KEYP_7;
-            case SDLK_KP8:         return KEYP_8;
-            case SDLK_KP9:         return KEYP_9;
-
-            case SDLK_KP_PERIOD:   return KEYP_PERIOD;
-            case SDLK_KP_MULTIPLY: return KEYP_MULTIPLY;
-            case SDLK_KP_PLUS:     return KEYP_PLUS;
-            case SDLK_KP_MINUS:    return KEYP_MINUS;
-            case SDLK_KP_DIVIDE:   return KEYP_DIVIDE;
-            case SDLK_KP_EQUALS:   return KEYP_EQUALS;
-            case SDLK_KP_ENTER:    return KEYP_ENTER;
-
-            default:
-                return tolower(sym->sym);
-        }
-    }
-}
-
-// Convert an SDL button index to textscreen button index.
-//
-// Note special cases because 2 == mid in SDL, 3 == mid in textscreen/setup
-
-static int SDLButtonToTXTButton(int button)
-{
-    switch (button)
-    {
-        case SDL_BUTTON_LEFT:
-            return TXT_MOUSE_LEFT;
-        case SDL_BUTTON_RIGHT:
-            return TXT_MOUSE_RIGHT;
-        case SDL_BUTTON_MIDDLE:
-            return TXT_MOUSE_MIDDLE;
-        default:
-            return TXT_MOUSE_BASE + button - 1;
-    }
-}
-
 static int MouseHasMoved(void)
 {
     static int last_x = 0, last_y = 0;
@@ -581,22 +441,13 @@ static int MouseHasMoved(void)
 }
 
 
-signed int TXT_GetChar(void)
+void TXT_WaitForChar(void)
 {
     SDL_Event ev;
 
-    while (SDL_PollEvent(&ev))
+	while (1)
     {
-        // If there is an event callback, allow it to intercept this
-        // event.
-
-        if (event_callback != NULL)
-        {
-            if (event_callback(&ev, event_callback_data))
-            {
-                continue;
-            }
-        }
+		SDL_WaitEvent(&ev);
 
         // Process the event.
 
@@ -604,39 +455,27 @@ signed int TXT_GetChar(void)
         {
             case SDL_MOUSEBUTTONDOWN:
                 if (ev.button.button < TXT_MAX_MOUSE_BUTTONS)
-                {
-                    return SDLButtonToTXTButton(ev.button.button);
-                }
+                    return;
                 break;
 
             case SDL_KEYDOWN:
-                return TranslateKey(&ev.key.keysym);
+                return;
 
             case SDL_KEYUP:
                 break;
 
             case SDL_QUIT:
                 // Quit = escape
-                return 27;
+                return;
 
             case SDL_MOUSEMOTION:
                 if (MouseHasMoved())
-                {
-                    return 0;
-                }
+					break;
 
             default:
                 break;
         }
     }
-
-    return -1;
-}
-
-void TXT_Sleep(int timeout)
-{
-	// We can just wait forever until an event occurs
-	SDL_WaitEvent(NULL);
 }
 
 void TXT_SetWindowTitle(char *title)

@@ -77,11 +77,7 @@ unsigned char *TXT_GetScreenData(void);
 void TXT_UpdateScreen(void);
 
 // Read a character from the keyboard
-int TXT_GetChar(void);
-
-// Sleep until an event is received or the screen needs updating
-// Optional timeout in ms (timeout == 0 : sleep forever)
-void TXT_Sleep(int timeout);
+void TXT_WaitForChar(void);
 
 // Set the window title of the window containing the text mode screen
 void TXT_SetWindowTitle(char *title);

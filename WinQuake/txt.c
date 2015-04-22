@@ -113,17 +113,8 @@ static void I_Endoom(byte *endoom_data)
 
     // Wait for a keypress
 
-    while (true)
-    {
-        TXT_UpdateScreen();
-
-        if (TXT_GetChar() > 0)
-        {
-            break;
-        }
-
-        TXT_Sleep(0);
-    }
+	TXT_UpdateScreen();
+	TXT_WaitForChar();
 
     // Shut down text mode screen
 
