@@ -28,24 +28,12 @@ void D_Endoom(void);
 #define TXT_SCREEN_W 80
 #define TXT_SCREEN_H 25
 
-// Initialize the screen
-// Returns 1 if successful, 0 if failed.
-int TXT_Init(void);
-
-// Shut down text mode emulation
-void TXT_Shutdown(void);
+void TXT_Init(const char *title, byte *ascreendata);
 
 // Get a pointer to the buffer containing the raw screen data.
 unsigned char *TXT_GetScreenData(void);
 
-// Update the whole screen
-void TXT_UpdateScreen(void);
-
-// Read a character from the keyboard
-void TXT_WaitForChar(void);
-
-// Set the window title of the window containing the text mode screen
-void TXT_SetWindowTitle(char *title);
+void TXT_Show(void);
 
 #endif
 

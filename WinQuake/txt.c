@@ -28,7 +28,7 @@
 // the title set with I_SetWindowTitle.
 //
 
-static void I_InitWindowTitle(void)
+/*static void I_InitWindowTitle(void)
 {
     char *buf;
 
@@ -36,92 +36,11 @@ static void I_InitWindowTitle(void)
 	buf = "PLACEHOLDER";
     TXT_SetWindowTitle(buf);
     //free(buf);
-}
-
-// Set the application icon
-
-static void I_InitWindowIcon(void)
-{
-	/*
-    SDL_Surface *surface;
-    Uint8 *mask;
-    int i;
-
-    // Generate the mask
-
-    mask = malloc(icon_w * icon_h / 8);
-    memset(mask, 0, icon_w * icon_h / 8);
-
-    for (i=0; i<icon_w * icon_h; ++i)
-    {
-        if (icon_data[i * 3] != 0x00
-         || icon_data[i * 3 + 1] != 0x00
-         || icon_data[i * 3 + 2] != 0x00)
-        {
-            mask[i / 8] |= 1 << (7 - i % 8);
-        }
-    }
-
-    surface = SDL_CreateRGBSurfaceFrom(icon_data,
-                                       icon_w,
-                                       icon_h,
-                                       24,
-                                       icon_w * 3,
-                                       0xff << 0,
-                                       0xff << 8,
-                                       0xff << 16,
-                                       0);
-
-    SDL_WM_SetIcon(surface, mask);
-    SDL_FreeSurface(surface);
-    free(mask);
-	*/
-}
-
-
-#define ENDOOM_W 80
-#define ENDOOM_H 25
+}*/
 
 // 
 // Displays the text mode ending screen after the game quits
 //
-
-static void I_Endoom(byte *endoom_data)
-{
-    byte *screendata;
-    int y;
-    int indent;
-
-    // Set up text mode screen
-
-    TXT_Init();
-    I_InitWindowTitle();
-    I_InitWindowIcon();
-
-    // Write the data to the screen memory
-
-    screendata = TXT_GetScreenData();
-
-    indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
-
-    for (y=0; y<TXT_SCREEN_H; ++y)
-    {
-        memcpy(screendata + (y * TXT_SCREEN_W * 2),
-               endoom_data + (y * ENDOOM_W + indent) * 2,
-               TXT_SCREEN_W * 2);
-    }
-
-    // Wait for a keypress
-
-	TXT_UpdateScreen();
-	TXT_WaitForChar();
-
-    // Shut down text mode screen
-
-    TXT_Shutdown();
-}
-
-
 void D_Endoom(void)
 {
 	byte	screen[80*25*2];
@@ -154,5 +73,5 @@ void D_Endoom(void)
 		for (i=0 ; i<6 ; i++)
 			screen[0*80*2 + 72*2 + i*2] = ver[i];
 
-    I_Endoom(d);
+    TXT_Init("PLACEHOLDER", screen);
 }

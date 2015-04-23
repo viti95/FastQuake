@@ -110,6 +110,10 @@ static SDL_Color ega_colors[] =
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+static void TXT_Shutdown(void);
+static void TXT_UpdateScreen(void);
+static void TXT_WaitForChar(void);
+
 // Examine system DPI settings to determine whether to use the large font.
 
 static int Win32_UseLargeFont(void)
@@ -227,12 +231,10 @@ static void ChooseTextFont(void)
 // Returns 1 if successful, 0 if an error occurred
 //
 
-int TXT_Init(void)
+void TXT_Init(const char *title, byte *ascreendata)
 {
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-    {
-        return 0;
-    }
+        return;
 
     ChooseTextFont();
 
@@ -243,7 +245,7 @@ int TXT_Init(void)
                               TXT_SCREEN_H * font->h, 0, 0);
 
     if (screen == NULL)
-        return 0;
+        return;
 
     // Instead, we draw everything into an intermediate 8-bit surface
     // the same dimensions as the screen. SDL then takes care of all the
@@ -254,16 +256,20 @@ int TXT_Init(void)
     SDL_SetColors(screenbuffer, ega_colors, 0, 16);
 
     screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
-    memset(screendata, 0, TXT_SCREEN_W * TXT_SCREEN_H * 2);
+    memcpy(screendata, ascreendata, TXT_SCREEN_W * TXT_SCREEN_H * 2);
 
     // Ignore all mouse motion events
 
 //    SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
 
-    return 1;
+	SDL_WM_SetCaption(title, NULL);
+	
+	TXT_UpdateScreen();
+	TXT_WaitForChar();
+    TXT_Shutdown();
 }
 
-void TXT_Shutdown(void)
+static void TXT_Shutdown(void)
 {
     free(screendata);
     screendata = NULL;
@@ -333,7 +339,7 @@ static inline void UpdateCharacter(int x, int y)
     }
 }
 
-void TXT_UpdateScreen(void)
+static void TXT_UpdateScreen(void)
 {
     SDL_Rect rect;
     int x, y;
@@ -356,7 +362,7 @@ void TXT_UpdateScreen(void)
 }
 
 
-void TXT_WaitForChar(void)
+static void TXT_WaitForChar(void)
 {
     SDL_Event ev;
 
@@ -381,7 +387,6 @@ void TXT_WaitForChar(void)
     }
 }
 
-void TXT_SetWindowTitle(char *title)
+void TXT_Show(void)
 {
-    SDL_WM_SetCaption(title, NULL);
 }
