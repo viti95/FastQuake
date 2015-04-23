@@ -4433,10 +4433,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\txt.c"
-				>
-			</File>
-			<File
 				RelativePath=".\txt_win.c"
 				>
 			</File>

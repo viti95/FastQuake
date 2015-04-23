@@ -225,13 +225,8 @@ static void ChooseTextFont(void)
     }
 }
 
-//
-// Initialize text mode screen
-//
-// Returns 1 if successful, 0 if an error occurred
-//
 
-void TXT_Init(const char *title, byte *ascreendata)
+void TXT_ShowScreen(const char *title, byte *ascreendata)
 {
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
         return;
@@ -276,11 +271,6 @@ static void TXT_Shutdown(void)
     SDL_FreeSurface(screenbuffer);
     screenbuffer = NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
-}
-
-unsigned char *TXT_GetScreenData(void)
-{
-    return screendata;
 }
 
 static inline void UpdateCharacter(int x, int y)
@@ -385,8 +375,4 @@ static void TXT_WaitForChar(void)
                 return;
         }
     }
-}
-
-void TXT_Show(void)
-{
 }

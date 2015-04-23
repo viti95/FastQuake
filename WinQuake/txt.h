@@ -20,20 +20,12 @@
 #ifndef __I_ENDOOM__
 #define __I_ENDOOM__
 
-// Display the Endoom screen on shutdown.
-void D_Endoom(void);
-
 // Screen size
 
 #define TXT_SCREEN_W 80
 #define TXT_SCREEN_H 25
 
-void TXT_Init(const char *title, byte *ascreendata);
-
-// Get a pointer to the buffer containing the raw screen data.
-unsigned char *TXT_GetScreenData(void);
-
-void TXT_Show(void);
+void TXT_ShowScreen(const char *title, byte *ascreendata);
 
 #endif
 
