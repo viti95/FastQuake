@@ -23,6 +23,8 @@
 #include "quakedef.h"
 #include "winquake.h"
 
+#include <ddraw.h>
+
 #include "txt.h"
 
 #if defined(_MSC_VER) && !defined(__cplusplus)
@@ -107,10 +109,8 @@ static RGBQUAD ega_colors[] =
 
 #endif
 
-#ifdef _WIN32
-
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+LPDIRECTDRAW7 pDD;
+LPDIRECTDRAWSURFACE7 pDDPrimary, pDDSecondary;
 
 static void TXT_Shutdown(HWND hwnd);
 static void TXT_UpdateScreen(HWND hwnd);
@@ -136,8 +136,6 @@ static int Win32_UseLargeFont(void)
 
     return dpix >= 144;
 }
-
-#endif
 
 static txt_font_t *FontForName(char *name)
 {
@@ -226,7 +224,12 @@ static void ChooseTextFont(HWND hwnd)
 
 void TXT_Init(HWND hwnd)
 {
+	HRESULT hr;
 	RECT rect;
+
+	DDSURFACEDESC2 ddsd;
+	LPDIRECTDRAWCLIPPER pDDClipper;
+
 	ChooseTextFont(hwnd);
 
 	GetWindowRect(hwnd, &rect);
@@ -240,6 +243,30 @@ void TXT_Init(HWND hwnd)
 
     screenbuffer = calloc(TXT_SCREEN_W * TXT_SCREEN_H, font->w * font->h);
 	screen = calloc(TXT_SCREEN_W * TXT_SCREEN_H * font->w * font->h, 4);
+
+	hr = DirectDrawCreateEx(NULL, &pDD, &IID_IDirectDraw7, NULL);
+	hr = IDirectDraw7_SetCooperativeLevel(pDD, hwnd, DDSCL_NORMAL);
+
+	ZeroMemory(&ddsd, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+	hr = IDirectDraw7_CreateSurface(pDD, &ddsd, &pDDPrimary, NULL);
+
+	hr = IDirectDraw7_CreateClipper(pDD, 0, &pDDClipper, NULL);
+	hr = IDirectDrawClipper_SetHWnd(pDDClipper, 0, hwnd);
+	hr = IDirectDrawSurface7_SetClipper(pDDPrimary, pDDClipper);
+	IDirectDrawClipper_Release(pDDClipper);
+
+	ZeroMemory(&ddsd, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+	ddsd.dwWidth = TXT_SCREEN_W * font->w;
+	ddsd.dwHeight = TXT_SCREEN_H * font->h;
+	hr = IDirectDraw7_CreateSurface(pDD, &ddsd, &pDDSecondary, NULL);
+
+	if (hr);
 }
 
 LRESULT CALLBACK TXT_WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
@@ -317,6 +344,22 @@ static void TXT_Shutdown(HWND hwnd)
 	free(screen);
     screenbuffer = NULL;
 	screen = NULL;
+
+	if (pDD)
+	{
+		IDirectDraw7_Release(pDD);
+		pDD = NULL;
+	}
+	if (pDDPrimary)
+	{
+		IDirectDrawSurface7_Release(pDDPrimary);
+		pDDPrimary = NULL;
+	}
+	if (pDDSecondary)
+	{
+		IDirectDrawSurface7_Release(pDDSecondary);
+		pDDSecondary = NULL;
+	}
 }
 
 static inline void UpdateCharacter(int x, int y)
