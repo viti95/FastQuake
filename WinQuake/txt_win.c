@@ -47,11 +47,11 @@ typedef unsigned char uint8_t;
 #include "txt_largefont.h"
 #include "txt_smallfont.h"
 
-// static SDL_Surface *screen;
-static unsigned char *screen;
 static unsigned char *screenbuffer;
 static unsigned char *screendata;
 extern HICON g_hIcon;
+
+static unsigned window_w, window_h;
 
 // Font we are using:
 
@@ -229,20 +229,33 @@ void TXT_Init(HWND hwnd)
 
 	DDSURFACEDESC2 ddsd;
 	LPDIRECTDRAWCLIPPER pDDClipper;
+	unsigned bordered_window_w, bordered_window_h;
 
 	ChooseTextFont(hwnd);
 
+	// calculate size of window's interior
+	window_w = TXT_SCREEN_W * font->w;
+	window_h = TXT_SCREEN_H * font->h;
+
+	// calculate real window size (including borders)
+	rect.left = 0;
+	rect.top = 0;
+	rect.right = window_w;
+	rect.bottom = window_h;
+	AdjustWindowRect(&rect, GetWindowLong(hwnd, GWL_STYLE), FALSE);
+	bordered_window_w = rect.right - rect.left;
+	bordered_window_h = rect.bottom - rect.top;
+
+	// get window position and resize it there
 	GetWindowRect(hwnd, &rect);
 	MoveWindow(
 		hwnd,
 		rect.left, rect.top,
-		TXT_SCREEN_W * font->w,
-		TXT_SCREEN_H * font->h,
+		bordered_window_w, bordered_window_h,
 		FALSE
 	);
 
     screenbuffer = calloc(TXT_SCREEN_W * TXT_SCREEN_H, font->w * font->h);
-	screen = calloc(TXT_SCREEN_W * TXT_SCREEN_H * font->w * font->h, 4);
 
 	hr = DirectDrawCreateEx(NULL, &pDD, &IID_IDirectDraw7, NULL);
 	hr = IDirectDraw7_SetCooperativeLevel(pDD, hwnd, DDSCL_NORMAL);
@@ -282,6 +295,7 @@ LRESULT CALLBACK TXT_WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		break;
 	case WM_PAINT:
 		TXT_UpdateScreen(hwnd);
+		ValidateRect(hwnd, NULL);
 		break;
 	case WM_CREATE:
 		TXT_Init(hwnd);
@@ -341,10 +355,8 @@ void TXT_ShowScreen(const char *title, byte *ascreendata)
 static void TXT_Shutdown(HWND hwnd)
 {
     free(screenbuffer);
-	free(screen);
-    screenbuffer = NULL;
-	screen = NULL;
-
+	screenbuffer = NULL;
+	
 	if (pDD)
 	{
 		IDirectDraw7_Release(pDD);
@@ -420,28 +432,35 @@ static inline void UpdateCharacter(int x, int y)
     }
 }
 
-static void Blit8bppTo32bpp(unsigned char *dst, int dstpitch, unsigned char *src, unsigned w, unsigned h, const RGBQUAD *pal, unsigned numcols)
+static void Blit8bppToScreen(unsigned char *bmp, const RGBQUAD *pal, unsigned numcols)
 {
+	DDSURFACEDESC2 ddsd;
+	HRESULT hr;
+	byte *scanline;
 	unsigned x, y;
 	
-	// SDL_LockSurface(dst);
-	for (y=0; y<h; y++)
+	ZeroMemory(&ddsd, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	hr = IDirectDrawSurface7_Lock(pDDSecondary, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
+
+	scanline = ddsd.lpSurface;
+	for (y=0; y<window_h; y++)
 	{
-		RGBQUAD *scanline = (RGBQUAD *)((byte*)dst + y*dstpitch);
-		for (x=0; x<w; x++)
+		for (x=0; x<window_w; x++)
 		{
-			unsigned char col = src[y*w + x];
+			unsigned char col = bmp[y*window_w + x];
 			if (col >= numcols)
 				col = 0;
-			memcpy(&scanline[x], &pal[col], sizeof(RGBQUAD));
+			memcpy((RGBQUAD*)scanline + x, &pal[col], sizeof(RGBQUAD));
 		}
+		scanline += ddsd.lPitch;
 	}
-	// SDL_UnlockSurface(dst);
+	hr = IDirectDrawSurface7_Unlock(pDDSecondary, NULL);
 }
 
 static void TXT_UpdateScreen(HWND hwnd)
 {
-    RECT rect;
+	RECT rect;
     int x, y;
 
     for (y=0; y<TXT_SCREEN_H; ++y)
@@ -452,14 +471,9 @@ static void TXT_UpdateScreen(HWND hwnd)
         }
     }
 
-    rect.left = 0;
-    rect.top = 0;
-    rect.right = TXT_SCREEN_W * font->w;
-    rect.bottom = TXT_SCREEN_H * font->h;
+	Blit8bppToScreen(screenbuffer, ega_colors, sizeof(ega_colors)/sizeof(RGBQUAD));
 
-	Blit8bppTo32bpp(
-		screen, TXT_SCREEN_W * font->w * 4, screenbuffer,
-		rect.right-rect.left, rect.bottom-rect.top,
-		ega_colors, sizeof(ega_colors)/sizeof(RGBQUAD)
-	);
+	GetClientRect(hwnd, &rect);
+	MapWindowPoints(hwnd, NULL, (LPPOINT)&rect, 2);
+	IDirectDrawSurface7_Blt(pDDPrimary, &rect, pDDSecondary, NULL, 0, NULL);
 }
