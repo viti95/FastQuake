@@ -15,8 +15,6 @@
 // Text mode emulation in SDL
 //
 
-#include "SDL.h"
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,15 +37,19 @@ typedef struct
     unsigned int h;
 } txt_font_t;
 
+typedef unsigned char uint8_t;
+
 // Fonts:
 
 #include "txt_font.h"
 #include "txt_largefont.h"
 #include "txt_smallfont.h"
 
-static SDL_Surface *screen;
+// static SDL_Surface *screen;
+static unsigned char *screen;
 static unsigned char *screenbuffer;
 static unsigned char *screendata;
+extern HICON g_hIcon;
 
 // Font we are using:
 
@@ -110,9 +112,9 @@ static RGBQUAD ega_colors[] =
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-static void TXT_Shutdown(void);
-static void TXT_UpdateScreen(void);
-static void TXT_WaitForChar(void);
+static void TXT_Shutdown(HWND hwnd);
+static void TXT_UpdateScreen(HWND hwnd);
+static void TXT_Init(HWND hwnd);
 
 // Examine system DPI settings to determine whether to use the large font.
 
@@ -164,10 +166,12 @@ static txt_font_t *FontForName(char *name)
 // 640x480, use the small font.
 //
 
-static void ChooseTextFont(void)
+static void ChooseTextFont(HWND hwnd)
 {
-    const SDL_VideoInfo *info;
+	HMONITOR monitor;
+	MONITORINFO mi;
     char *env;
+	unsigned current_w, current_h;
 
     // Allow normal selection to be overridden from an environment variable:
 
@@ -183,29 +187,29 @@ static void ChooseTextFont(void)
         }
     }
 
-    // Get desktop resolution:
+	monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
 
-    info = SDL_GetVideoInfo();
-
-    // If in doubt and we can't get a list, always prefer to
     // fall back to the normal font:
-
-    if (info == NULL)
+	if (GetMonitorInfoA(monitor, &mi) == FALSE)
     {
         font = &main_font;
         return;
     }
+
+    // Get current screen resolution:
+	current_w = mi.rcMonitor.right-mi.rcMonitor.left;
+	current_h = mi.rcMonitor.bottom-mi.rcMonitor.top;
 
     // On tiny low-res screens (eg. palmtops) use the small font.
     // If the screen resolution is at least 1920x1080, this is
     // a modern high-resolution display, and we can use the
     // large font.
 
-    if (info->current_w < 640 || info->current_h < 480)
+	if (current_w < 640 || current_h < 480)
     {
         font = &small_font;
     }
-#ifdef _WIN32
+
     // On Windows we can use the system DPI settings to make a
     // more educated guess about whether to use the large font.
 
@@ -213,54 +217,106 @@ static void ChooseTextFont(void)
     {
         font = &large_font;
     }
-#endif
-    // TODO: Detect high DPI on Linux by inquiring about Gtk+ scale
-    // settings. This looks like it should just be a case of shelling
-    // out to invoke the 'gsettings' command, eg.
-    //   gsettings get org.gnome.desktop.interface text-scaling-factor
-    // and using large_font if the result is >= 2.
+
     else
     {
         font = &main_font;
     }
 }
 
+void TXT_Init(HWND hwnd)
+{
+	RECT rect;
+	ChooseTextFont(hwnd);
+
+	GetWindowRect(hwnd, &rect);
+	MoveWindow(
+		hwnd,
+		rect.left, rect.top,
+		TXT_SCREEN_W * font->w,
+		TXT_SCREEN_H * font->h,
+		FALSE
+	);
+
+    screenbuffer = calloc(TXT_SCREEN_W * TXT_SCREEN_H, font->w * font->h);
+	screen = calloc(TXT_SCREEN_W * TXT_SCREEN_H * font->w * font->h, 4);
+}
+
+LRESULT CALLBACK TXT_WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
+{
+	switch (umsg)
+	{
+	case WM_LBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_KEYDOWN:
+	case WM_CLOSE:
+		DestroyWindow(hwnd);
+		break;
+	case WM_PAINT:
+		TXT_UpdateScreen(hwnd);
+		break;
+	case WM_CREATE:
+		TXT_Init(hwnd);
+		break;
+	case WM_DESTROY:
+		TXT_Shutdown(hwnd);
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hwnd, umsg, wparam, lparam);
+	}
+	return 0;
+}
 
 void TXT_ShowScreen(const char *title, byte *ascreendata)
 {
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+	WNDCLASS wc;
+	ATOM atom;
+	HWND hwnd;
+	MSG msg;
+
+    if (ascreendata == NULL)
         return;
 
-    ChooseTextFont();
-
-    // Always create the screen at 32bpp;
-    // some systems nowadays don't seem to support true 8-bit palettized
-    // screen modes very well and we end up with screwed up colors.
-    screen = SDL_SetVideoMode(TXT_SCREEN_W * font->w,
-                              TXT_SCREEN_H * font->h, 32, 0);
-
-    if (screen == NULL)
-        return;
-
-    screenbuffer = calloc(TXT_SCREEN_W * TXT_SCREEN_H, font->w * font->h);
     screendata = ascreendata;
 
-    // Ignore all mouse motion events
+	ZeroMemory(&wc, sizeof(wc));
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hIcon = g_hIcon;
+	wc.hInstance = global_hInstance;
+	wc.lpfnWndProc = TXT_WndProc;
+	wc.lpszClassName = "WinQuakeTXT";
+	atom = RegisterClass(&wc);
 
-//    SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+	hwnd = CreateWindow(
+		MAKEINTATOM(atom),
+		title,
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+		CW_USEDEFAULT, CW_USEDEFAULT,
+		CW_USEDEFAULT, CW_USEDEFAULT,
+		(HWND)NULL,
+		(HMENU)NULL,
+		(HINSTANCE)global_hInstance,
+		(LPVOID)NULL
+	);
 
-	SDL_WM_SetCaption(title, NULL);
-	
-	TXT_UpdateScreen();
-	TXT_WaitForChar();
-    TXT_Shutdown();
+	ShowWindow(hwnd, SW_SHOWNORMAL);
+	UpdateWindow(hwnd);
+
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 }
 
-static void TXT_Shutdown(void)
+static void TXT_Shutdown(HWND hwnd)
 {
     free(screenbuffer);
+	free(screen);
     screenbuffer = NULL;
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	screen = NULL;
 }
 
 static inline void UpdateCharacter(int x, int y)
@@ -321,14 +377,14 @@ static inline void UpdateCharacter(int x, int y)
     }
 }
 
-static void Blit8bppTo32bpp(SDL_Surface *dst, unsigned char *src, unsigned w, unsigned h, const RGBQUAD *pal, unsigned numcols)
+static void Blit8bppTo32bpp(unsigned char *dst, int dstpitch, unsigned char *src, unsigned w, unsigned h, const RGBQUAD *pal, unsigned numcols)
 {
 	unsigned x, y;
 	
-	SDL_LockSurface(dst);
+	// SDL_LockSurface(dst);
 	for (y=0; y<h; y++)
 	{
-		RGBQUAD *scanline = (RGBQUAD *)((byte*)dst->pixels + y*dst->pitch);
+		RGBQUAD *scanline = (RGBQUAD *)((byte*)dst + y*dstpitch);
 		for (x=0; x<w; x++)
 		{
 			unsigned char col = src[y*w + x];
@@ -337,12 +393,12 @@ static void Blit8bppTo32bpp(SDL_Surface *dst, unsigned char *src, unsigned w, un
 			memcpy(&scanline[x], &pal[col], sizeof(RGBQUAD));
 		}
 	}
-	SDL_UnlockSurface(dst);
+	// SDL_UnlockSurface(dst);
 }
 
-static void TXT_UpdateScreen(void)
+static void TXT_UpdateScreen(HWND hwnd)
 {
-    SDL_Rect rect;
+    RECT rect;
     int x, y;
 
     for (y=0; y<TXT_SCREEN_H; ++y)
@@ -353,37 +409,14 @@ static void TXT_UpdateScreen(void)
         }
     }
 
-    rect.x = 0;
-    rect.y = 0;
-    rect.w = TXT_SCREEN_W * font->w;
-    rect.h = TXT_SCREEN_H * font->h;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = TXT_SCREEN_W * font->w;
+    rect.bottom = TXT_SCREEN_H * font->h;
 
-	Blit8bppTo32bpp(screen, screenbuffer, rect.w, rect.h, ega_colors, sizeof(ega_colors)/sizeof(RGBQUAD));
-    SDL_UpdateRects(screen, 1, &rect);
-}
-
-
-static void TXT_WaitForChar(void)
-{
-    SDL_Event ev;
-
-	while (1)
-    {
-		SDL_WaitEvent(&ev);
-
-        // Process the event.
-
-        switch (ev.type)
-        {
-            case SDL_MOUSEBUTTONDOWN:
-				return;
-
-            case SDL_KEYDOWN:
-                return;
-
-            case SDL_QUIT:
-                // Quit = escape
-                return;
-        }
-    }
+	Blit8bppTo32bpp(
+		screen, TXT_SCREEN_W * font->w * 4, screenbuffer,
+		rect.right-rect.left, rect.bottom-rect.top,
+		ega_colors, sizeof(ega_colors)/sizeof(RGBQUAD)
+	);
 }

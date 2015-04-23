@@ -81,7 +81,7 @@ static qboolean vid_canalttab = false;
 static qboolean vid_wassuspended = false;
 static int		windowed_mouse;
 extern qboolean	mouseactive;  // from in_win.c
-static HICON	hIcon;
+HICON	g_hIcon;
 
 int			DIBWidth, DIBHeight;
 RECT		WindowRect;
@@ -274,8 +274,8 @@ qboolean VID_SetWindowedMode (int modenum)
 
 	mainwindow = dibwindow;
 
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)TRUE, (LPARAM)hIcon);
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)FALSE, (LPARAM)hIcon);
+	SendMessage (mainwindow, WM_SETICON, (WPARAM)TRUE, (LPARAM)g_hIcon);
+	SendMessage (mainwindow, WM_SETICON, (WPARAM)FALSE, (LPARAM)g_hIcon);
 
 	return true;
 }
@@ -363,8 +363,8 @@ qboolean VID_SetFullDIBMode (int modenum)
 
 	mainwindow = dibwindow;
 
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)TRUE, (LPARAM)hIcon);
-	SendMessage (mainwindow, WM_SETICON, (WPARAM)FALSE, (LPARAM)hIcon);
+	SendMessage (mainwindow, WM_SETICON, (WPARAM)TRUE, (LPARAM)g_hIcon);
+	SendMessage (mainwindow, WM_SETICON, (WPARAM)FALSE, (LPARAM)g_hIcon);
 
 	return true;
 }
@@ -1594,7 +1594,7 @@ void	VID_Init (unsigned char *palette)
 	Cmd_AddCommand ("vid_describemode", VID_DescribeMode_f);
 	Cmd_AddCommand ("vid_describemodes", VID_DescribeModes_f);
 
-	hIcon = LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON2));
+	g_hIcon = LoadIcon (global_hInstance, MAKEINTRESOURCE (IDI_ICON2));
 
 	InitCommonControls();
 

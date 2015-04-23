@@ -49,6 +49,7 @@ static int		lockcount;
 static qboolean	force_minimized, in_mode_set, force_mode_set;
 static int		windowed_mouse;
 static qboolean	palette_changed, syscolchg, hide_window, pal_is_nostatic;
+HICON			g_hIcon;
 
 viddef_t	vid;				// global video state
 
@@ -1169,6 +1170,8 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 {
 	WNDCLASS		wc;
 	HWND			hwnd;
+
+	g_hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_ICON2));
 	
 	/* Register the frame class */
 	wc.style = 0;
@@ -1176,7 +1179,7 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
-	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
+	wc.hIcon         = g_hIcon;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName = 0;
