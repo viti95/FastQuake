@@ -112,9 +112,9 @@ static RGBQUAD ega_colors[] =
 LPDIRECTDRAW7 pDD;
 LPDIRECTDRAWSURFACE7 pDDPrimary, pDDSecondary;
 
-static void TXT_Shutdown(HWND hwnd);
+static void TXT_Shutdown();
 static void TXT_UpdateScreen(HWND hwnd);
-static void TXT_Init(HWND hwnd);
+static bool TXT_Init(HWND hwnd);
 
 // Examine system DPI settings to determine whether to use the large font.
 
@@ -222,7 +222,7 @@ static void ChooseTextFont(HWND hwnd)
     }
 }
 
-void TXT_Init(HWND hwnd)
+bool TXT_Init(HWND hwnd)
 {
 	HRESULT hr;
 	RECT rect;
@@ -258,28 +258,43 @@ void TXT_Init(HWND hwnd)
     screenbuffer = calloc(TXT_SCREEN_W * TXT_SCREEN_H, font->w * font->h);
 
 	hr = DirectDrawCreateEx(NULL, &pDD, &IID_IDirectDraw7, NULL);
-	hr = IDirectDraw7_SetCooperativeLevel(pDD, hwnd, DDSCL_NORMAL);
 
-	ZeroMemory(&ddsd, sizeof(ddsd));
-	ddsd.dwSize = sizeof(ddsd);
-	ddsd.dwFlags = DDSD_CAPS;
-	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
-	hr = IDirectDraw7_CreateSurface(pDD, &ddsd, &pDDPrimary, NULL);
+	if (SUCCEEDED(hr))
+		hr = IDirectDraw7_SetCooperativeLevel(pDD, hwnd, DDSCL_NORMAL);
 
-	hr = IDirectDraw7_CreateClipper(pDD, 0, &pDDClipper, NULL);
-	hr = IDirectDrawClipper_SetHWnd(pDDClipper, 0, hwnd);
-	hr = IDirectDrawSurface7_SetClipper(pDDPrimary, pDDClipper);
-	IDirectDrawClipper_Release(pDDClipper);
+	if (SUCCEEDED(hr))
+	{
+		ZeroMemory(&ddsd, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS;
+		ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+		hr = IDirectDraw7_CreateSurface(pDD, &ddsd, &pDDPrimary, NULL);
+	}
 
-	ZeroMemory(&ddsd, sizeof(ddsd));
-	ddsd.dwSize = sizeof(ddsd);
-	ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
-	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
-	ddsd.dwWidth = TXT_SCREEN_W * font->w;
-	ddsd.dwHeight = TXT_SCREEN_H * font->h;
-	hr = IDirectDraw7_CreateSurface(pDD, &ddsd, &pDDSecondary, NULL);
+	if (SUCCEEDED(hr))
+		hr = IDirectDraw7_CreateClipper(pDD, 0, &pDDClipper, NULL);
 
-	if (hr);
+	if (SUCCEEDED(hr))
+		hr = IDirectDrawClipper_SetHWnd(pDDClipper, 0, hwnd);
+
+	if (SUCCEEDED(hr))
+		hr = IDirectDrawSurface7_SetClipper(pDDPrimary, pDDClipper);
+
+	if (SUCCEEDED(hr))
+		IDirectDrawClipper_Release(pDDClipper);
+
+	if (SUCCEEDED(hr))
+	{
+		ZeroMemory(&ddsd, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+		ddsd.dwWidth = TXT_SCREEN_W * font->w;
+		ddsd.dwHeight = TXT_SCREEN_H * font->h;
+		hr = IDirectDraw7_CreateSurface(pDD, &ddsd, &pDDSecondary, NULL);
+	}
+
+	return SUCCEEDED(hr);
 }
 
 LRESULT CALLBACK TXT_WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
@@ -298,7 +313,8 @@ LRESULT CALLBACK TXT_WndProc(HWND hwnd, UINT umsg, WPARAM wparam, LPARAM lparam)
 		ValidateRect(hwnd, NULL);
 		break;
 	case WM_CREATE:
-		TXT_Init(hwnd);
+		if (!TXT_Init(hwnd))
+			return -1;
 		break;
 	case WM_DESTROY:
 		TXT_Shutdown(hwnd);
@@ -342,6 +358,9 @@ void TXT_ShowScreen(const char *title, byte *ascreendata)
 		(LPVOID)NULL
 	);
 
+	if (hwnd == NULL)
+		return;
+
 	ShowWindow(hwnd, SW_SHOWNORMAL);
 	UpdateWindow(hwnd);
 
@@ -352,7 +371,7 @@ void TXT_ShowScreen(const char *title, byte *ascreendata)
 	}
 }
 
-static void TXT_Shutdown(HWND hwnd)
+static void TXT_Shutdown()
 {
     free(screenbuffer);
 	screenbuffer = NULL;
@@ -442,20 +461,25 @@ static void Blit8bppToScreen(unsigned char *bmp, const RGBQUAD *pal, unsigned nu
 	ZeroMemory(&ddsd, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
 	hr = IDirectDrawSurface7_Lock(pDDSecondary, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
+	if (hr == DDERR_SURFACELOST)
+		hr = IDirectDrawSurface7_Restore(pDDSecondary);
 
-	scanline = ddsd.lpSurface;
-	for (y=0; y<window_h; y++)
+	if (SUCCEEDED(hr))
 	{
-		for (x=0; x<window_w; x++)
+		scanline = ddsd.lpSurface;
+		for (y=0; y<window_h; y++)
 		{
-			unsigned char col = bmp[y*window_w + x];
-			if (col >= numcols)
-				col = 0;
-			memcpy((RGBQUAD*)scanline + x, &pal[col], sizeof(RGBQUAD));
+			for (x=0; x<window_w; x++)
+			{
+				unsigned char col = bmp[y*window_w + x];
+				if (col >= numcols)
+					col = 0;
+				memcpy((RGBQUAD*)scanline + x, &pal[col], sizeof(RGBQUAD));
+			}
+			scanline += ddsd.lPitch;
 		}
-		scanline += ddsd.lPitch;
+		IDirectDrawSurface7_Unlock(pDDSecondary, NULL);
 	}
-	hr = IDirectDrawSurface7_Unlock(pDDSecondary, NULL);
 }
 
 static void TXT_UpdateScreen(HWND hwnd)
@@ -475,5 +499,9 @@ static void TXT_UpdateScreen(HWND hwnd)
 
 	GetClientRect(hwnd, &rect);
 	MapWindowPoints(hwnd, NULL, (LPPOINT)&rect, 2);
+
+	if (IDirectDrawSurface7_IsLost(pDDPrimary))
+		IDirectDrawSurface7_Restore(pDDPrimary);
+
 	IDirectDrawSurface7_Blt(pDDPrimary, &rect, pDDSecondary, NULL, 0, NULL);
 }
