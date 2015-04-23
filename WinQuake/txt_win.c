@@ -114,7 +114,7 @@ LPDIRECTDRAWSURFACE7 pDDPrimary, pDDSecondary;
 
 static void TXT_Shutdown();
 static void TXT_UpdateScreen(HWND hwnd);
-static bool TXT_Init(HWND hwnd);
+static qboolean TXT_Init(HWND hwnd);
 
 // Examine system DPI settings to determine whether to use the large font.
 
@@ -222,7 +222,7 @@ static void ChooseTextFont(HWND hwnd)
     }
 }
 
-bool TXT_Init(HWND hwnd)
+qboolean TXT_Init(HWND hwnd)
 {
 	HRESULT hr;
 	RECT rect;

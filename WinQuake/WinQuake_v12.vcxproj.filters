@@ -270,7 +270,10 @@
     <ClCompile Include="zone.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="txt_sdl.c">
+    <ClCompile Include="txt_win.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fake_mgl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -434,7 +437,7 @@
     <ClInclude Include="zone.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="txt_main.h">
+    <ClInclude Include="txt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="txt_font.h">
@@ -443,13 +446,10 @@
     <ClInclude Include="txt_largefont.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="txt_doomkeys.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="txt_sdl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="txt_smallfont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="fake_mgl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
