@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "quakedef.h"
+#include "winquake.h"
 
 #include "txt.h"
 
@@ -45,9 +46,8 @@ typedef struct
 #include "txt_smallfont.h"
 
 static SDL_Surface *screen;
-static SDL_Surface *screenbuffer;
+static unsigned char *screenbuffer;
 static unsigned char *screendata;
-static int key_mapping = 1;
 
 // Font we are using:
 
@@ -57,7 +57,7 @@ static txt_font_t *font;
 
 #ifndef TANGO
 
-static SDL_Color ega_colors[] = 
+static RGBQUAD ega_colors[] = 
 {
     {0x00, 0x00, 0x00, 0x00},          // 0: Black
     {0x00, 0x00, 0xa8, 0x00},          // 1: Blue
@@ -83,7 +83,7 @@ static SDL_Color ega_colors[] =
 // http://tango.freedesktop.org/ also
 // http://uwstopia.nl/blog/2006/07/tango-terminal
 
-static SDL_Color ega_colors[] = 
+static RGBQUAD ega_colors[] = 
 {
     {0x2e, 0x34, 0x36, 0x00},          // 0: Black
     {0x34, 0x65, 0xa4, 0x00},          // 1: Blue
@@ -233,23 +233,16 @@ void TXT_ShowScreen(const char *title, byte *ascreendata)
 
     ChooseTextFont();
 
-    // Always create the screen at the native screen depth (bpp=0);
+    // Always create the screen at 32bpp;
     // some systems nowadays don't seem to support true 8-bit palettized
     // screen modes very well and we end up with screwed up colors.
     screen = SDL_SetVideoMode(TXT_SCREEN_W * font->w,
-                              TXT_SCREEN_H * font->h, 0, 0);
+                              TXT_SCREEN_H * font->h, 32, 0);
 
     if (screen == NULL)
         return;
 
-    // Instead, we draw everything into an intermediate 8-bit surface
-    // the same dimensions as the screen. SDL then takes care of all the
-    // 8->32 bit (or whatever depth) color conversions for us.
-    screenbuffer = SDL_CreateRGBSurface(0, TXT_SCREEN_W * font->w,
-                                        TXT_SCREEN_H * font->h,
-                                        8, 0, 0, 0, 0);
-    SDL_SetColors(screenbuffer, ega_colors, 0, 16);
-
+    screenbuffer = calloc(TXT_SCREEN_W * TXT_SCREEN_H, font->w * font->h);
     screendata = ascreendata;
 
     // Ignore all mouse motion events
@@ -265,7 +258,7 @@ void TXT_ShowScreen(const char *title, byte *ascreendata)
 
 static void TXT_Shutdown(void)
 {
-    SDL_FreeSurface(screenbuffer);
+    free(screenbuffer);
     screenbuffer = NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
@@ -279,6 +272,8 @@ static inline void UpdateCharacter(int x, int y)
     int bg, fg;
     unsigned int x1, y1;
 
+	unsigned int pitch = TXT_SCREEN_W * font->w;
+
     p = &screendata[(y * TXT_SCREEN_W + x) * 2];
     character = p[0];
 
@@ -289,8 +284,8 @@ static inline void UpdateCharacter(int x, int y)
     bytes = (font->w + 7) / 8;
     p = &font->data[character * font->h * bytes];
 
-    s = ((unsigned char *) screenbuffer->pixels)
-      + (y * font->h * screenbuffer->pitch)
+    s = ((unsigned char *) screenbuffer)
+      + (y * font->h * pitch)
       + (x * font->w);
 
     for (y1=0; y1<font->h; ++y1)
@@ -322,8 +317,27 @@ static inline void UpdateCharacter(int x, int y)
             ++p;
         }
 
-        s += screenbuffer->pitch;
+        s += pitch;
     }
+}
+
+static void Blit8bppTo32bpp(SDL_Surface *dst, unsigned char *src, unsigned w, unsigned h, const RGBQUAD *pal, unsigned numcols)
+{
+	unsigned x, y;
+	
+	SDL_LockSurface(dst);
+	for (y=0; y<h; y++)
+	{
+		RGBQUAD *scanline = (RGBQUAD *)((byte*)dst->pixels + y*dst->pitch);
+		for (x=0; x<w; x++)
+		{
+			unsigned char col = src[y*w + x];
+			if (col >= numcols)
+				col = 0;
+			memcpy(&scanline[x], &pal[col], sizeof(RGBQUAD));
+		}
+	}
+	SDL_UnlockSurface(dst);
 }
 
 static void TXT_UpdateScreen(void)
@@ -344,7 +358,7 @@ static void TXT_UpdateScreen(void)
     rect.w = TXT_SCREEN_W * font->w;
     rect.h = TXT_SCREEN_H * font->h;
 
-    SDL_BlitSurface(screenbuffer, &rect, screen, &rect);
+	Blit8bppTo32bpp(screen, screenbuffer, rect.w, rect.h, ega_colors, sizeof(ega_colors)/sizeof(RGBQUAD));
     SDL_UpdateRects(screen, 1, &rect);
 }
 
