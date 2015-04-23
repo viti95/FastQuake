@@ -250,8 +250,7 @@ void TXT_ShowScreen(const char *title, byte *ascreendata)
                                         8, 0, 0, 0, 0);
     SDL_SetColors(screenbuffer, ega_colors, 0, 16);
 
-    screendata = malloc(TXT_SCREEN_W * TXT_SCREEN_H * 2);
-    memcpy(screendata, ascreendata, TXT_SCREEN_W * TXT_SCREEN_H * 2);
+    screendata = ascreendata;
 
     // Ignore all mouse motion events
 
@@ -266,8 +265,6 @@ void TXT_ShowScreen(const char *title, byte *ascreendata)
 
 static void TXT_Shutdown(void)
 {
-    free(screendata);
-    screendata = NULL;
     SDL_FreeSurface(screenbuffer);
     screenbuffer = NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
