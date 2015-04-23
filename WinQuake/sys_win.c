@@ -475,7 +475,7 @@ void Sys_Quit (void)
 			for (i=0 ; i<6 ; i++)
 				screen[0*80*2 + 72*2 + i*2] = ver[i];
 
-		TXT_ShowScreen("PLACEHOLDER", screen);
+		TXT_ShowScreen("SoftQuake", screen);
 	}
 
 	exit (0);
