@@ -14,3 +14,5 @@
 /gas2masm/GL Release
 /gas2masm/Release
 /WinQuake/ID1
+/WinQuake/*.o
+/WinQuake/quake.exe
