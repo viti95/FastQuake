@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // rights reserved.
 
 #include <windows.h>
+#include <process.h>
 #include "quakedef.h"
 #include "winquake.h"
 
@@ -192,7 +193,7 @@ void CDAudio_WaitForFinish(void)
 
 #define BUFFER_PARTS 8
 
-static void PlayingThreadProc(void *arglist)
+static unsigned int __stdcall PlayingThreadProc(void *arglist)
 {
 	struct ThreadArgList_t *tal = arglist;
 
@@ -230,7 +231,7 @@ static void PlayingThreadProc(void *arglist)
 	if (FAILED(pDSBufCD->lpVtbl->Lock(pDSBufCD, 0, 0, &ptr, &dummy, NULL, NULL, DSBLOCK_ENTIREBUFFER)))
 	{
 		Con_DPrintf("CDAudio: cannot lock sound buffer.\n");
-		return;
+		return -1;
 	}
 	
 	if (!PaintSoundOGG(tal, ptr, (BUFFER_PARTS-1)*part_size))
@@ -282,6 +283,8 @@ static void PlayingThreadProc(void *arglist)
 
 	if (trackPlayedToEnd && playLooping)
 		CDAudio_Play(playTrack, true);	
+
+	return 0;
 }
 
 void CDAudio_Play(byte track, qboolean looping)
