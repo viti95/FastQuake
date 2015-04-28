@@ -327,7 +327,7 @@ int VID_Suspend (MGLDC *dc,m_int flags)
 
 		return MGL_NO_SUSPEND_APP;
 	}
-	else if (flags & MGL_REACTIVATE)
+	else /* if (flags & MGL_REACTIVATE) */
 	{
 		IN_SetQuakeMouseState ();
 	// fix the leftover Alt from any Alt-Tab or the like that switched us away
