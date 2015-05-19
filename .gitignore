@@ -18,3 +18,5 @@
 /*.suo
 *.ncb
 *.suo
+*.o
+/WinQuake/quake.exe

@@ -34,12 +34,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <dpmi.h>
 #include <sys/nearptr.h>
 #include <conio.h>
+#include <crt0.h>
 
 #include "quakedef.h"
 #include "dosisms.h"
 
 #define MINIMUM_WIN_MEMORY			0x800000
 #define MINIMUM_WIN_MEMORY_LEVELPAK	(MINIMUM_WIN_MEMORY + 0x100000)
+
+int _crt0_startup_flags = _CRT0_FLAG_UNIX_SBRK;
 
 int			end_of_memory;
 qboolean	lockmem, lockunlockmem, unlockmem;
@@ -58,7 +61,7 @@ static double		curtime = 0.0;
 static double		lastcurtime = 0.0;
 static double		oldtime = 0.0;
 
-static qboolean		isDedicated;
+qboolean		isDedicated;
 
 static int			minmem;
 
