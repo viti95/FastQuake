@@ -750,7 +750,7 @@ int TTY_Connect(int handle, char *host)
 	ComPort	*p;
 	char	*response = NULL;
 	keydest_t	save_key_dest;
-	byte	dialstring[64];
+	char	dialstring[64];
 	byte	b;
 
 	p = handleToPort[handle];

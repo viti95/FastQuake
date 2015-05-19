@@ -625,7 +625,7 @@ static void CD_f (void)
 	char	*command;
 	int		ret;
 	int		n;
-	int		startAddress;
+	int		startAddress = 0;
 
 	if (Cmd_Argc() < 2)
 		return;
