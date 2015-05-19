@@ -16,14 +16,14 @@
 ###########################################################################
 
 CC=gcc
-CFLAGS=-O3 -march=i586 -fomit-frame-pointer -ffast-math -fno-strict-aliasing -Wno-trigraphs
+CFLAGS=-march=i586 -fno-strict-aliasing -Wall -Wno-trigraphs -Wno-unused-but-set-variable
 LDFLAGS=
 LIBS=-lm
 
 ifdef DEBUG
-	CFLAGS+=-gstabs+3 -O0 -fno-omit-frame-pointer -fno-fast-math
+	CFLAGS+=-O0 -gstabs+3 -fno-omit-frame-pointer -fno-fast-math
 else
-	CFLAGS+=-DNDEBUG
+	CFLAGS+=-O3 -fomit-frame-pointer -ffast-math -DNDEBUG
 	LDFLAGS+=-s
 endif
 
