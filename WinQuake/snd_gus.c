@@ -70,7 +70,7 @@ static struct field_buffer field_buffers[NUM_FIELD_BUFFERS];
 //***************************************************************************
 // Internal routines
 //***************************************************************************
-static char toupper(char c)
+static char qtoupper(char c)
 {
    if (c>='a' && c<='z')
       c-=('a'-'A');
@@ -111,7 +111,7 @@ static int is_section(char *s,const char *name)
    while (s[0]!=']' && s[0]!=13 && s[0]!=10 && s[0]!=0 && name[0]!=0)
    {
       if (!wild)
-         if (toupper(s[0])!=toupper(name[0]))
+         if (qtoupper(s[0])!=qtoupper(name[0]))
             return(0);
       s++;
       if (!wild)
@@ -148,7 +148,7 @@ static int is_field(char *s,const char *name)
    while (s[0]!='=' && s[0]!=13 && s[0]!=10 && s[0]!=0 && name[0]!=0)
    {
       if (!wild)
-         if (toupper(s[0])!=toupper(name[0]))
+         if (qtoupper(s[0])!=qtoupper(name[0]))
             return(0);
       s++;
       if (!wild)

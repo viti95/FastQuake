@@ -16,7 +16,7 @@
 ###########################################################################
 
 CC=gcc
-CFLAGS=-O3 -march=i586 -fomit-frame-pointer -ffast-math -fno-strict-aliasing
+CFLAGS=-O3 -march=i586 -fomit-frame-pointer -ffast-math -fno-strict-aliasing -Wno-trigraphs
 LDFLAGS=
 LIBS=-lm
 

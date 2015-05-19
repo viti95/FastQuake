@@ -20,3 +20,4 @@
 *.suo
 *.o
 /WinQuake/quake.exe
+*.bak
