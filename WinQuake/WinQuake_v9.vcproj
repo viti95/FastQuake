@@ -4986,10 +4986,6 @@
 			RelativePath="progdefs.q1"
 			>
 		</File>
-		<File
-			RelativePath="progdefs.q2"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>
