@@ -1569,7 +1569,7 @@ VID_Init
 void	VID_Init (unsigned char *palette)
 {
 	int		i, existingmode;
-	int		basenummodes, width, height, bpp, findbpp, done;
+	int		basenummodes, width, height, bpp;
 	byte	*ptmp;
 	char	gldir[MAX_OSPATH];
 	HDC		hdc;
@@ -1651,16 +1651,7 @@ void	VID_Init (unsigned char *palette)
 					width = 640;
 				}
 
-				if (COM_CheckParm("-bpp"))
-				{
-					bpp = Q_atoi(com_argv[COM_CheckParm("-bpp")+1]);
-					findbpp = 0;
-				}
-				else
-				{
-					bpp = 15;
-					findbpp = 1;
-				}
+				bpp = 32;
 
 				if (COM_CheckParm("-height"))
 					height = Q_atoi(com_argv[COM_CheckParm("-height")+1]);
@@ -1697,65 +1688,32 @@ void	VID_Init (unsigned char *palette)
 					}
 				}
 
-				done = 0;
-
-				do
+				if (COM_CheckParm("-height"))
 				{
-					if (COM_CheckParm("-height"))
-					{
-						height = Q_atoi(com_argv[COM_CheckParm("-height")+1]);
+					height = Q_atoi(com_argv[COM_CheckParm("-height")+1]);
 
-						for (i=1, vid_default=0 ; i<nummodes ; i++)
-						{
-							if ((modelist[i].width == width) &&
-								(modelist[i].height == height) &&
-								(modelist[i].bpp == bpp))
-							{
-								vid_default = i;
-								done = 1;
-								break;
-							}
-						}
-					}
-					else
+					for (i=1, vid_default=0 ; i<nummodes ; i++)
 					{
-						for (i=1, vid_default=0 ; i<nummodes ; i++)
+						if ((modelist[i].width == width) &&
+							(modelist[i].height == height) &&
+							(modelist[i].bpp == bpp))
 						{
-							if ((modelist[i].width == width) && (modelist[i].bpp == bpp))
-							{
-								vid_default = i;
-								done = 1;
-								break;
-							}
+							vid_default = i;
+							break;
 						}
 					}
-
-					if (!done)
+				}
+				else
+				{
+					for (i=1, vid_default=0 ; i<nummodes ; i++)
 					{
-						if (findbpp)
+						if ((modelist[i].width == width) && (modelist[i].bpp == bpp))
 						{
-							switch (bpp)
-							{
-							case 15:
-								bpp = 16;
-								break;
-							case 16:
-								bpp = 32;
-								break;
-							case 32:
-								bpp = 24;
-								break;
-							case 24:
-								done = 1;
-								break;
-							}
-						}
-						else
-						{
-							done = 1;
+							vid_default = i;
+							break;
 						}
 					}
-				} while (!done);
+				}
 
 				if (!vid_default)
 				{
