@@ -38,6 +38,21 @@ qpic_t		*draw_backtile;
 int			translate_texture;
 int			char_texture;
 
+int			cs_texture;
+
+static byte cs_data[64] = {
+	0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
+	0xfe, 0xff, 0xfe, 0xff, 0xfe, 0xff, 0xfe, 0xff,
+	0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+};
+
+extern cvar_t crosshair, cl_crossx, cl_crossy, crosshaircolor;
+
 typedef struct
 {
 	int		texnum;
@@ -63,6 +78,7 @@ typedef struct
 	char	identifier[64];
 	int		width, height;
 	qboolean	mipmap;
+	int             lhcsum;
 } gltexture_t;
 
 #define	MAX_GLTEXTURES	1024
@@ -401,6 +417,8 @@ void Draw_Init (void)
 
 	// now turn them into textures
 	char_texture = GL_LoadTexture ("charset", 128, 128, draw_chars, false, true);
+	
+	cs_texture = GL_LoadTexture ("crosshair", 8, 8, cs_data, false, true);
 
 	start = Hunk_LowMark();
 
@@ -559,6 +577,39 @@ of the code.
 */
 void Draw_DebugChar (char num)
 {
+}
+
+void Draw_Crosshair(void)
+{
+	int x, y;
+	extern vrect_t		scr_vrect;
+	unsigned char *pColor;
+
+	if (crosshair.value == 2)
+	{
+		x = scr_vrect.x + scr_vrect.width/2 + 1  + cl_crossx.value;
+		y = scr_vrect.y + scr_vrect.height/2  + cl_crossy.value;
+
+		glTexEnvf ( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+		pColor = (unsigned char *) &d_8to24table[(byte) crosshaircolor.value];
+		glColor4ubv ( pColor );
+		GL_Bind (cs_texture);
+
+		glBegin (GL_QUADS);
+		glTexCoord2f (0, 0);
+		glVertex2f (x - 4, y - 4);
+		glTexCoord2f (1, 0);
+		glVertex2f (x+12, y-4);
+		glTexCoord2f (1, 1);
+		glVertex2f (x+12, y+12);
+		glTexCoord2f (0, 1);
+		glVertex2f (x - 4, y+12);
+		glEnd ();
+
+		glTexEnvf ( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	}
+	else if (crosshair.value)
+		Draw_Character (scr_vrect.x + scr_vrect.width/2 + cl_crossx.value, scr_vrect.y + scr_vrect.height/2 + cl_crossy.value, '+');
 }
 
 /*
@@ -1232,43 +1283,62 @@ static	unsigned	trans[640*480];		// FIXME, temporary
 GL_LoadTexture
 ================
 */
+int lhcsumtable[256];
 int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolean mipmap, qboolean alpha)
 {
-	qboolean	noalpha;
-	int			i, p, s;
-	gltexture_t	*glt;
+	qboolean noalpha;
+	int   i, p, s, lhcsum;
+	gltexture_t *glt;
+
+	// LordHavoc: do a checksum to confirm the data really is the same as previous
+	// occurances. well this isn't exactly a checksum, it's better than that but
+	// not following any standards.
+	lhcsum = 0;
+	s = width*height;
+	for (i = 0;i < 256;i++) lhcsumtable[i] = i + 1;
+	for (i = 0;i < s;i++) lhcsum += (lhcsumtable[data[i] & 255]++);
 
 	// see if the texture is allready present
 	if (identifier[0])
 	{
-		for (i=0, glt=gltextures ; i<numgltextures ; i++, glt++)
+		for (i=0, glt=gltextures ; i < numgltextures ; i++, glt++)
 		{
 			if (!strcmp (identifier, glt->identifier))
 			{
-				if (width != glt->width || height != glt->height)
-					Sys_Error ("GL_LoadTexture: cache mismatch");
-				return gltextures[i].texnum;
+				// LordHavoc: everyone hates cache mismatchs, so I fixed it
+				if (lhcsum != glt->lhcsum || width != glt->width || height != glt->height)
+				{
+					Con_DPrintf("GL_LoadTexture: cache mismatch, replacing old texture\n");
+					goto GL_LoadTexture_setup; // drop out with glt pointing to the texture to replace
+					//Sys_Error ("GL_LoadTexture: cache mismatch");
+				}
+				return glt->texnum;
 			}
 		}
 	}
-	else {
-		glt = &gltextures[numgltextures];
-		numgltextures++;
-	}
+	// LordHavoc: this was an else condition, causing disasterous results,
+	// whoever at id or threewave must've been half asleep...
+	glt = &gltextures[numgltextures];
+	numgltextures++;
 
 	strcpy (glt->identifier, identifier);
 	glt->texnum = texture_extension_number;
+	texture_extension_number++;
+
+	// LordHavoc: label to drop out of the loop into the setup code
+GL_LoadTexture_setup:
+	glt->lhcsum = lhcsum; // LordHavoc: used to verify textures are identical
 	glt->width = width;
 	glt->height = height;
 	glt->mipmap = mipmap;
 
-	GL_Bind(texture_extension_number );
+	if (!isDedicated)
+	{
+		GL_Bind(glt->texnum);
+		GL_Upload8 (data, width, height, mipmap, alpha);
+	}
 
-	GL_Upload8 (data, width, height, mipmap, alpha);
-
-	texture_extension_number++;
-
-	return texture_extension_number-1;
+	return glt->texnum;
 }
 
 /*

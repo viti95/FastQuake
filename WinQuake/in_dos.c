@@ -302,15 +302,15 @@ void IN_MouseMove (usercmd_t *cmd)
 	mouse_y *= sensitivity.value;
 
 // add mouse X/Y movement to cmd
-	if ( (in_strafe.state & 1) || (lookstrafe.value && (in_mlook.state & 1) ))
+	if ( (in_strafe.state & 1) || (lookstrafe.value && (in_mlook.state & 1 || in_mlook_cvar.value) ))
 		cmd->sidemove += m_side.value * mouse_x;
 	else
 		cl.viewangles[YAW] -= m_yaw.value * mouse_x;
 	
-	if (in_mlook.state & 1)
+	if (in_mlook.state & 1 || in_mlook_cvar.value)
 		V_StopPitchDrift ();
 		
-	if ( (in_mlook.state & 1) && !(in_strafe.state & 1))
+	if ( (in_mlook.state & 1 || in_mlook_cvar.value) && !(in_strafe.state & 1))
 	{
 		cl.viewangles[PITCH] += m_pitch.value * mouse_y;
 		if (cl.viewangles[PITCH] > 80)
@@ -366,7 +366,7 @@ void IN_JoyMove (usercmd_t *cmd)
 		cl.viewangles[YAW] = anglemod(cl.viewangles[YAW]);
 	}
 
-	if (in_mlook.state & 1)
+	if (in_mlook.state & 1 || in_mlook_cvar.value)
 	{
 		if (m_pitch.value < 0)
 			speed *= -1;
@@ -607,7 +607,7 @@ Con_DPrintf("OUT: y:%f p:%f r:%f f:%f s:%f u:%f\n", extern_control->viewangles[Y
 	if (cl.viewangles[PITCH] < -70)
 		cl.viewangles[PITCH] = -70;
 
-	freelook = (extern_control->flags & AUX_FLAG_FREELOOK || aux_look.value || in_mlook.state & 1);
+	freelook = (extern_control->flags & AUX_FLAG_FREELOOK || aux_look.value || in_mlook.state & 1 || in_mlook_cvar.value);
 
 	if (freelook)
 		V_StopPitchDrift ();

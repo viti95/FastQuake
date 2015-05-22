@@ -63,6 +63,8 @@ typedef struct cvar_s
 	struct cvar_s *next;
 } cvar_t;
 
+void	Cvar_List_f (void);	// 2000-01-09 CvarList command by Maddes
+
 void 	Cvar_RegisterVariable (cvar_t *variable);
 // registers a cvar that allready has the name, string, and optionally the
 // archive elements set.

@@ -59,6 +59,8 @@ msurface_t  *skychain = NULL;
 msurface_t  *waterchain = NULL;
 
 void R_RenderDynamicLightmaps (msurface_t *fa);
+void DrawGLPoly (glpoly_t *p);
+void DrawGLWaterPoly (glpoly_t *p);
 
 /*
 ===============
@@ -422,7 +424,7 @@ void R_DrawSequentialPoly (msurface_t *s)
 	// normal lightmaped poly
 	//
 
-	if (! (s->flags & (SURF_DRAWSKY|SURF_DRAWTURB|SURF_UNDERWATER) ) )
+	if (! (s->flags & (SURF_DRAWSKY|SURF_DRAWTURB|(SURF_UNDERWATER * !(int)!r_waterwarp.value)) ) )
 	{
 		R_RenderDynamicLightmaps (s);
 		if (gl_mtexable) {
@@ -459,7 +461,6 @@ void R_DrawSequentialPoly (msurface_t *s)
 				glVertex3fv (v);
 			}
 			glEnd ();
-			return;
 		} else {
 			p = s->polys;
 
@@ -488,6 +489,15 @@ void R_DrawSequentialPoly (msurface_t *s)
 			glDisable (GL_BLEND);
 		}
 
+		// draw fullbright mask if appropriate
+		if (t->fullbright != -1)
+		{
+			GL_DisableMultitexture ();
+			glEnable (GL_BLEND);
+			GL_Bind (t->fullbright);
+			DrawGLPoly (s->polys);
+			glDisable (GL_BLEND);
+		}
 		return;
 	}
 
@@ -577,6 +587,16 @@ void R_DrawSequentialPoly (msurface_t *s)
 		GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		glEnable (GL_BLEND);
 		DrawGLWaterPolyLightmap (p);
+		glDisable (GL_BLEND);
+	}
+	
+	// draw fullbright mask if appropriate
+	if (t->fullbright != -1)
+	{
+		GL_DisableMultitexture ();
+		glEnable (GL_BLEND);
+		GL_Bind (t->fullbright);
+		DrawGLWaterPoly (s->polys);
 		glDisable (GL_BLEND);
 	}
 }
@@ -780,6 +800,8 @@ void R_RenderBrushPoly (msurface_t *fa)
 		DrawGLWaterPoly (fa->polys);
 	else
 		DrawGLPoly (fa->polys);
+
+	fa->draw_this_frame = 1;
 
 	// add the poly to the proper lightmap chain
 
@@ -1168,6 +1190,7 @@ e->angles[0] = -e->angles[0];	// stupid quake bug
 
 	R_BlendLightmaps ();
 
+	DrawFullBrightTextures (clmodel->surfaces, clmodel->numsurfaces);
 	glPopMatrix ();
 }
 
@@ -1331,7 +1354,8 @@ void R_DrawWorld (void)
 	DrawTextureChains ();
 
 	R_BlendLightmaps ();
-
+	
+	DrawFullBrightTextures (cl.worldmodel->surfaces, cl.worldmodel->numsurfaces);
 }
 
 

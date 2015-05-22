@@ -489,63 +489,50 @@ Sys_FloatTime
 */
 double Sys_FloatTime (void)
 {
-	static int			sametimecount;
-	static unsigned int	oldtime;
-	static int			first = 1;
-	LARGE_INTEGER		PerformanceCount;
-	unsigned int		temp, t2;
-	double				time;
+	static qboolean first = true;
+	// MH's solution combining timeGetTime for stability and
+	// QueryPerformanceCounter for precision.
+	static __int64 qpcfreq = 0;
+	static __int64 currqpccount = 0;
+	static __int64 lastqpccount = 0;
+	static double qpcfudge = 0;
+	DWORD currtime = 0;
+	static DWORD lasttime = 0;
+	static DWORD starttime = 0;
 
-	Sys_PushFPCW_SetHigh ();
-
-	QueryPerformanceCounter (&PerformanceCount);
-
-	temp = ((unsigned int)PerformanceCount.LowPart >> lowshift) |
-		   ((unsigned int)PerformanceCount.HighPart << (32 - lowshift));
-
-	if (first)
-	{
-		oldtime = temp;
-		first = 0;
-	}
-	else
-	{
-	// check for turnover or backward time
-		if ((temp <= oldtime) && ((oldtime - temp) < 0x10000000))
-		{
-			oldtime = temp;	// so we can't get stuck
-		}
-		else
-		{
-			t2 = temp - oldtime;
-
-			time = (double)t2 * pfreq;
-			oldtime = temp;
-
-			curtime += time;
-
-			if (curtime == lastcurtime)
-			{
-				sametimecount++;
-
-				if (sametimecount > 100000)
-				{
-					curtime += 1.0;
-					sametimecount = 0;
-				}
-			}
-			else
-			{
-				sametimecount = 0;
-			}
-
-			lastcurtime = curtime;
-		}
+	if (first) {
+		timeBeginPeriod (1);
+		starttime = lasttime = timeGetTime ();
+		QueryPerformanceFrequency ((LARGE_INTEGER *) &qpcfreq);
+		QueryPerformanceCounter ((LARGE_INTEGER *) &lastqpccount);
+		first = false;
+		return 0;
 	}
 
-	Sys_PopFPCW ();
+	// get the current time from both counters
+	currtime = timeGetTime ();
+    QueryPerformanceCounter ((LARGE_INTEGER *) &currqpccount);
 
-    return curtime;
+	if (currtime != lasttime)  {
+		// requery the frequency in case it changes (which it can on multicore
+		// machines)
+		QueryPerformanceFrequency ((LARGE_INTEGER *) &qpcfreq);
+
+		// store back times and calc a fudge factor as timeGetTime can
+		// overshoot on a sub-millisecond scale
+		qpcfudge = (((double) (currqpccount - lastqpccount)
+					/ (double) qpcfreq))
+				- ((double) (currtime - lasttime) * 0.001);
+		lastqpccount = currqpccount;
+		lasttime = currtime;
+	} else {
+		qpcfudge = 0;
+	}
+
+	// the final time is the base from timeGetTime plus an addition from QPC
+	return ((double) (currtime - starttime) * 0.001)
+		+ ((double) (currqpccount - lastqpccount) / (double) qpcfreq)
+		+ qpcfudge;
 }
 
 
@@ -872,42 +859,36 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	Sys_Printf ("Host_Init\n");
 	Host_Init (&parms);
 
-	oldtime = Sys_FloatTime ();
-
-    /* main window message loop */
-	while (1)
-	{
-		if (isDedicated)
-		{
-			newtime = Sys_FloatTime ();
-			time = newtime - oldtime;
-
-			while (time < sys_ticrate.value )
-			{
-				Sys_Sleep();
-				newtime = Sys_FloatTime ();
-				time = newtime - oldtime;
-			}
-		}
-		else
-		{
-		// yield the CPU for a little while when paused, minimized, or not the focus
-			if ((cl.paused && (!ActiveApp && !DDActive)) || Minimized || block_drawing)
-			{
+	oldtime = Sys_FloatTime () - 0.1;
+	while (1) {							// Main message loop
+		if (!isDedicated) {
+			// yield the CPU for a little while when paused, minimized, or
+			// not the focus
+			if ((cl.paused && !ActiveApp) || Minimized) {
 				SleepUntilInput (PAUSE_SLEEP);
 				scr_skipupdate = 1;		// no point in bothering to draw
-			}
-			else if (!ActiveApp && !DDActive)
-			{
+			} else if (!ActiveApp) {
 				SleepUntilInput (NOT_FOCUS_SLEEP);
 			}
+		}
+		// find time spent rendering last frame
+		newtime = Sys_FloatTime ();
+		time = newtime - oldtime;
 
-			newtime = Sys_FloatTime ();
-			time = newtime - oldtime;
+		if (cls.state == ca_dedicated) {	// play vcrfiles at max speed
+			if (time < sys_ticrate.value) {
+				Sleep (1);
+				continue;			// not time to run a server-only tic yet
+			}
+			time = sys_ticrate.value;
 		}
 
+		if (time > sys_ticrate.value * 2)
+			oldtime = newtime;
+		else
+			oldtime += time;
+
 		Host_Frame (time);
-		oldtime = newtime;
 	}
 
     /* return success of application */

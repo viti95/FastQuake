@@ -420,6 +420,50 @@ cmd_source_t	cmd_source;
 
 static	cmd_function_t	*cmd_functions;		// possible commands to execute
 
+// 2000-01-09 CmdList command by Maddes  start
+/*
+========
+Cmd_List
+========
+*/
+void Cmd_List_f (void)
+{
+	cmd_function_t	*cmd;
+	char 		*partial;
+	int		len;
+	int		count;
+
+	if (Cmd_Argc() > 1)
+	{
+		partial = Cmd_Argv (1);
+		len = Q_strlen(partial);
+	}
+	else
+	{
+		partial = NULL;
+		len = 0;
+	}
+
+	count=0;
+	for (cmd=cmd_functions ; cmd ; cmd=cmd->next)
+	{
+		if (partial && Q_strncmp (partial,cmd->name, len))
+		{
+			continue;
+		}
+		Con_Printf ("\"%s\"\n", cmd->name);
+		count++;
+	}
+
+	Con_Printf ("%i command(s)", count);
+	if (partial)
+	{
+		Con_Printf (" beginning with \"%s\"", partial);
+	}
+	Con_Printf ("\n");
+}
+// 2000-01-09 CmdList command by Maddes  end
+
 /*
 ============
 Cmd_Init
@@ -436,6 +480,8 @@ void Cmd_Init (void)
 	Cmd_AddCommand ("alias",Cmd_Alias_f);
 	Cmd_AddCommand ("cmd", Cmd_ForwardToServer);
 	Cmd_AddCommand ("wait", Cmd_Wait_f);
+	Cmd_AddCommand ("cmdlist", Cmd_List_f);	// 2000-01-09 CmdList command by Maddes
+	Cmd_AddCommand ("cvarlist", Cvar_List_f);	// 2000-01-09 CvarList command by Maddes
 }
 
 /*
