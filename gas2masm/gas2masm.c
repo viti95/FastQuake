@@ -396,32 +396,44 @@ void emitonecalldata (void)
 
 void emitonejumpdata (void)
 {
+	/*jmp  *Ljmptab(,%eax,4)
+	  jmp dword ptr[Ljmptab(,%eax,4)]
+	  jmp dword ptr[Ljmptab+eax*4]
+	*/
 	int	i, isaddr, len;
 
-	if (tokens[1][0] == '*')
-	{
-		printf (" dword ptr[%s]", &tokens[1][1]);
-	}
-	else
-	{
-		isaddr = 0;
-		len = strlen(tokens[1]);
+	isaddr = 0;
+	len = strlen(tokens[1]);
 
-		for (i=0 ; i<len ; i++)
-		{
-			if (tokens[1][i] == '(')
-			{
+	if (tokens[1][0] == '*') {
+
+		for (i=0 ; i<len ; i++) {
+			if (tokens[1][i] == '(') {
+				isaddr = 1;
+				break;
+			}
+		}
+		memmove(&tokens[1][0],&tokens[1][1],strlen(tokens[1]));
+		if ( !isaddr ) {
+			//printf (" dword ptr [%s]", &tokens[1][1]);
+			printf (" dword ptr [");
+			emitanoperand (1, "", 1);
+			printf ("]");
+		} else {
+			emitanoperand (1, " dword ptr", 1);
+		}
+	} else {
+
+		for (i=0 ; i<len ; i++) {
+			if (tokens[1][i] == '(') {
 				isaddr = 1;
 				break;
 			}
 		}
 
-		if (!isaddr)
-		{
+		if (!isaddr) {
 			printf (" %s", tokens[1]);
-		}
-		else
-		{
+		} else {
 			emitanoperand (1, " dword ptr", 1);
 		}
 	}
@@ -763,13 +775,13 @@ void errorexit (void)
 }
 
 
-tokenstat whitespace (char c)
+tokenstat whitespace (int c)
 {
 	if (c == '\n')
 		return LINE_DONE;
 
 	if ((c <= ' ') ||
-		(c > 127) ||
+		//(c > 127) ||
 		(c == ','))
 	{
 		return WHITESPACE;
@@ -781,7 +793,7 @@ tokenstat whitespace (char c)
 
 int gettoken (void)
 {
-	char		c;
+	int		c;
 	int			count, parencount;
 	tokenstat	stat;
 
@@ -793,6 +805,18 @@ int gettoken (void)
 		if ((stat = whitespace (c)) == LINE_DONE)
 			return LINE_DONE;
 	} while (stat == WHITESPACE);
+
+	if (c == '#')
+	{
+		do
+		{
+			if  ((c = getchar()) == EOF)
+				return FILE_DONE;
+		} while (whitespace(c) != LINE_DONE);
+
+		return LINE_DONE;
+	}
+
 
 	token[0] = c;
 	count = 1;
