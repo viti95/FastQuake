@@ -422,7 +422,7 @@ void R_DrawSequentialPoly (msurface_t *s)
 	// normal lightmaped poly
 	//
 
-	if (! (s->flags & (SURF_DRAWSKY|SURF_DRAWTURB|SURF_UNDERWATER) ) )
+	if (! (s->flags & (SURF_DRAWSKY|SURF_DRAWTURB|(SURF_UNDERWATER * !(int)!r_waterwarp.value)) ) )
 	{
 		R_RenderDynamicLightmaps (s);
 		if (gl_mtexable) {
