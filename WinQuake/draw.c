@@ -236,6 +236,56 @@ void Draw_String (int x, int y, char *str)
 	}
 }
 
+
+void Draw_Pixel(int x, int y, byte color)
+{
+	byte			*dest;
+	unsigned short	*pusdest;
+
+	if (r_pixbytes == 1)
+	{
+		dest = vid.conbuffer + y*vid.conrowbytes + x;
+		*dest = color;
+	}
+	else
+	{
+	// FIXME: pre-expand to native format?
+		pusdest = (unsigned short *)
+		((byte *)vid.conbuffer + y*vid.conrowbytes + (x<<1));
+		*pusdest = d_8to16table[color];
+	}
+}
+
+
+
+void Draw_Crosshair(void)
+{
+	int x, y;
+	extern cvar_t crosshair, cl_crossx, cl_crossy, crosshaircolor;
+	extern vrect_t		scr_vrect;
+	byte c = (byte)crosshaircolor.value;
+
+	if (crosshair.value == 2)
+	{
+		x = scr_vrect.x + scr_vrect.width/2 + cl_crossx.value;
+		y = scr_vrect.y + scr_vrect.height/2 + cl_crossy.value;
+		Draw_Pixel(x - 1, y, c);
+		Draw_Pixel(x - 3, y, c);
+		Draw_Pixel(x + 1, y, c);
+		Draw_Pixel(x + 3, y, c);
+		Draw_Pixel(x, y - 1, c);
+		Draw_Pixel(x, y - 3, c);
+		Draw_Pixel(x, y + 1, c);
+		Draw_Pixel(x, y + 3, c);
+	}
+	else if (crosshair.value)
+		Draw_Character (
+			scr_vrect.x + scr_vrect.width/2 + cl_crossx.value,
+			scr_vrect.y + scr_vrect.height/2 + cl_crossy.value,
+			'+');
+}
+
+
 /*
 ================
 Draw_DebugChar
