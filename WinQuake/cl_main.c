@@ -715,6 +715,8 @@ void CL_Init (void)
 	Cvar_RegisterVariable (&lookstrafe);
 	Cvar_RegisterVariable (&sensitivity);
 
+	Cvar_RegisterVariable (&in_mlook_cvar);
+
 	Cvar_RegisterVariable (&m_pitch);
 	Cvar_RegisterVariable (&m_yaw);
 	Cvar_RegisterVariable (&m_forward);

@@ -229,6 +229,7 @@ cvar_t	cl_pitchspeed = {"cl_pitchspeed","150"};
 
 cvar_t	cl_anglespeedkey = {"cl_anglespeedkey","1.5"};
 
+cvar_t	in_mlook_cvar = {"in_mlook", "0", true};
 
 /*
 ================
