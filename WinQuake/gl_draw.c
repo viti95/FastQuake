@@ -418,8 +418,6 @@ void Draw_Init (void)
 	// now turn them into textures
 	char_texture = GL_LoadTexture ("charset", 128, 128, draw_chars, false, true);
 	
-	cs_texture = GL_LoadTexture ("crosshair", 8, 8, cs_data, false, true);
-
 	start = Hunk_LowMark();
 
 	cb = (qpic_t *)COM_LoadTempFile ("gfx/conback.lmp");	
@@ -472,6 +470,11 @@ void Draw_Init (void)
 	conback->height = cb->height;
 	ncdata = cb->data;
 #endif
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	
+	cs_texture = GL_LoadTexture ("crosshair", 8, 8, cs_data, false, true);
 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
