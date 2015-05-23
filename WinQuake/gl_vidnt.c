@@ -577,10 +577,10 @@ int		texture_extension_number = 1;
 #ifdef _WIN32
 void CheckMultiTextureExtensions(void) 
 {
-	if (strstr(gl_extensions, "GL_SGIS_multitexture ") && !COM_CheckParm("-nomtex")) {
+	if (strstr(gl_extensions, "GL_ARB_multitexture ") && !COM_CheckParm("-nomtex")) {
 		Con_Printf("Multitexture extensions found.\n");
-		qglMTexCoord2fSGIS = (void *) wglGetProcAddress("glMTexCoord2fSGIS");
-		qglSelectTextureSGIS = (void *) wglGetProcAddress("glSelectTextureSGIS");
+		qglMultiTexCoord2fARB = (void *) wglGetProcAddress("glMultiTexCoord2fARB");
+		qglActiveTextureARB = (void *) wglGetProcAddress("glActiveTextureARB");
 		gl_mtexable = true;
 	}
 }

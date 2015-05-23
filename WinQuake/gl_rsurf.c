@@ -278,8 +278,8 @@ extern	float	speedscale;		// for top sky and bottom sky
 void DrawGLWaterPoly (glpoly_t *p);
 void DrawGLWaterPolyLightmap (glpoly_t *p);
 
-lpMTexFUNC qglMTexCoord2fSGIS = NULL;
-lpSelTexFUNC qglSelectTextureSGIS = NULL;
+lpMTexFUNC qglMultiTexCoord2fARB = NULL;
+lpSelTexFUNC qglActiveTextureARB = NULL;
 
 qboolean mtexenabled = false;
 
@@ -289,7 +289,7 @@ void GL_DisableMultitexture(void)
 {
 	if (mtexenabled) {
 		glDisable(GL_TEXTURE_2D);
-		GL_SelectTexture(TEXTURE0_SGIS);
+		GL_SelectTexture(TEXTURE0_ARB);
 		mtexenabled = false;
 	}
 }
@@ -297,7 +297,7 @@ void GL_DisableMultitexture(void)
 void GL_EnableMultitexture(void) 
 {
 	if (gl_mtexable) {
-		GL_SelectTexture(TEXTURE1_SGIS);
+		GL_SelectTexture(TEXTURE1_ARB);
 		glEnable(GL_TEXTURE_2D);
 		mtexenabled = true;
 	}
@@ -432,7 +432,7 @@ void R_DrawSequentialPoly (msurface_t *s)
 
 			t = R_TextureAnimation (s->texinfo->texture);
 			// Binds world to texture env 0
-			GL_SelectTexture(TEXTURE0_SGIS);
+			GL_SelectTexture(TEXTURE0_ARB);
 			GL_Bind (t->gl_texturenum);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 			// Binds lightmap to texenv 1
@@ -456,8 +456,8 @@ void R_DrawSequentialPoly (msurface_t *s)
 			v = p->verts[0];
 			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
 			{
-				qglMTexCoord2fSGIS (TEXTURE0_SGIS, v[3], v[4]);
-				qglMTexCoord2fSGIS (TEXTURE1_SGIS, v[5], v[6]);
+				qglMultiTexCoord2fARB (TEXTURE0_ARB, v[3], v[4]);
+				qglMultiTexCoord2fARB (TEXTURE1_ARB, v[5], v[6]);
 				glVertex3fv (v);
 			}
 			glEnd ();
@@ -543,7 +543,7 @@ void R_DrawSequentialPoly (msurface_t *s)
 		p = s->polys;
 
 		t = R_TextureAnimation (s->texinfo->texture);
-		GL_SelectTexture(TEXTURE0_SGIS);
+		GL_SelectTexture(TEXTURE0_ARB);
 		GL_Bind (t->gl_texturenum);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 		GL_EnableMultitexture();
@@ -566,8 +566,8 @@ void R_DrawSequentialPoly (msurface_t *s)
 		v = p->verts[0];
 		for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
 		{
-			qglMTexCoord2fSGIS (TEXTURE0_SGIS, v[3], v[4]);
-			qglMTexCoord2fSGIS (TEXTURE1_SGIS, v[5], v[6]);
+			qglMultiTexCoord2fARB (TEXTURE0_ARB, v[3], v[4]);
+			qglMultiTexCoord2fARB (TEXTURE1_ARB, v[5], v[6]);
 
 			nv[0] = v[0] + 8*sin(v[1]*0.05+realtime)*sin(v[2]*0.05+realtime);
 			nv[1] = v[1] + 8*sin(v[0]*0.05+realtime)*sin(v[2]*0.05+realtime);
@@ -1682,7 +1682,7 @@ void GL_BuildLightmaps (void)
 	}
 
  	if (!gl_texsort.value)
- 		GL_SelectTexture(TEXTURE1_SGIS);
+ 		GL_SelectTexture(TEXTURE1_ARB);
 
 	//
 	// upload all lightmaps that were filled
@@ -1705,7 +1705,7 @@ void GL_BuildLightmaps (void)
 	}
 
  	if (!gl_texsort.value)
- 		GL_SelectTexture(TEXTURE0_SGIS);
+ 		GL_SelectTexture(TEXTURE0_ARB);
 
 }
 

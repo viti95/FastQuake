@@ -233,8 +233,8 @@ void R_TranslatePlayerSkin (int playernum);
 void GL_Bind (int texnum);
 
 // Multitexture
-#define    TEXTURE0_SGIS				0x835E
-#define    TEXTURE1_SGIS				0x835F
+#define    TEXTURE0_ARB				0x84C0
+#define    TEXTURE1_ARB				0x84C1
 
 #ifndef _WIN32
 #define APIENTRY /* */
@@ -242,8 +242,8 @@ void GL_Bind (int texnum);
 
 typedef void (APIENTRY *lpMTexFUNC) (GLenum, GLfloat, GLfloat);
 typedef void (APIENTRY *lpSelTexFUNC) (GLenum);
-extern lpMTexFUNC qglMTexCoord2fSGIS;
-extern lpSelTexFUNC qglSelectTextureSGIS;
+extern lpMTexFUNC qglMultiTexCoord2fARB;
+extern lpSelTexFUNC qglActiveTextureARB;
 
 extern qboolean gl_mtexable;
 
