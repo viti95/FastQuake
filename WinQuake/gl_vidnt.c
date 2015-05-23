@@ -1019,7 +1019,6 @@ LONG WINAPI MainWndProc (
     WPARAM  wParam,
     LPARAM  lParam)
 {
-    LONG    lRet = 1;
 	int		fwKeys, xPos, yPos, fActive, fMinimized, temp;
 	extern unsigned int uiWheelMessage;
 
@@ -1041,6 +1040,9 @@ LONG WINAPI MainWndProc (
 			window_y = (int) HIWORD(lParam);
 			VID_UpdateWindowStatus ();
 			break;
+
+		case WM_ERASEBKGND:
+			return 0;
 
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
@@ -1126,12 +1128,10 @@ LONG WINAPI MainWndProc (
 
     	default:
             /* pass all unhandled messages to DefWindowProc */
-            lRet = DefWindowProc (hWnd, uMsg, wParam, lParam);
-        break;
+            return DefWindowProc (hWnd, uMsg, wParam, lParam);
     }
 
-    /* return 1 if handled message, 0 if not */
-    return lRet;
+    return 0;
 }
 
 
@@ -1308,7 +1308,7 @@ void VID_InitDIB (HINSTANCE hInstance)
 	int				i;
 
 	/* Register the frame class */
-    wc.style         = 0;
+    wc.style         = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc   = (WNDPROC)MainWndProc;
     wc.cbClsExtra    = 0;
     wc.cbWndExtra    = 0;
