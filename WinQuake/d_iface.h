@@ -171,10 +171,6 @@ void D_UpdateRects (vrect_t *prect);
 // FIXME: this should go away
 void D_PolysetUpdateTables (void);
 
-// these are currently for internal use only, and should not be used by drivers
-extern int				r_skydirect;
-extern byte				*r_skysource;
-
 // transparency types for D_DrawRect ()
 #define DR_SOLID		0
 #define DR_TRANSPARENT	1
@@ -204,8 +200,6 @@ typedef struct
 extern drawsurf_t	r_drawsurf;
 
 void R_DrawSurface (void);
-void R_GenTile (msurface_t *psurf, void *pdest);
-
 
 // !!! if this is changed, it must be changed in d_ifacea.h too !!!
 #define TURB_TEX_SIZE	64		// base turbulent texture size
