@@ -276,6 +276,9 @@
     <ClCompile Include="fake_mgl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="gl_fullbright.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="progdefs.q1" />
@@ -450,6 +453,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="fake_mgl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gl_fullbright.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
