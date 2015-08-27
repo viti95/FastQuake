@@ -25,3 +25,4 @@ Debug GL
 Release GL
 *.sdf
 *.ipch
+*.opensdf
