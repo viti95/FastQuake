@@ -15,15 +15,15 @@ void	FakeMGL_fail()
 }
 
 
-m_int 	FakeMGL_FULL_registerDriver(const char *name,void *driver)
+m_int 	FakeMGL_FULL_registerDriver()
 {
-	return MGL_registerDriver(name, driver);
+	return MGL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
 }
 
 
-m_int 	FakeMGL_DIB_registerDriver(const char *name,void *driver)
+m_int 	FakeMGL_DIB_registerDriver()
 {
-	return MGL_registerDriver(name, driver);
+	return MGL_registerDriver(MGL_PACKED8NAME, PACKED8_driver);
 }
 
 
@@ -282,12 +282,12 @@ void 	FakeMGL_FULL_setPalette(FakeMGLDC_FULL *dc,palette_t *pal,m_int numColors,
 }
 
 
-void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dc,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop,m_int op)
+void 	FakeMGL_DIB_bitBltCoord(FakeMGLDC_DIB *dc,m_int left,m_int top,m_int right,m_int bottom,m_int dstLeft,m_int dstTop)
 {
 	if (!dc)
 		return;
 
-	MGL_bitBltCoord(dc->windc, dc->dibdc, left, top, right, bottom, dstLeft, dstTop, op);
+	MGL_bitBltCoord(dc->windc, dc->dibdc, left, top, right, bottom, dstLeft, dstTop, MGL_REPLACE_MODE);
 }
 
 

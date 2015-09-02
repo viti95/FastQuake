@@ -276,7 +276,7 @@ void VID_InitMGLFull (HINSTANCE hInstance)
     uchar		*m;
 
 	// Initialise the MGL
-	FakeMGL_FULL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
+	FakeMGL_FULL_registerDriver();
 	FakeMGL_FULL_detectGraph(&driver,&mode);
 	m = FakeMGL_FULL_availableModes();
 
@@ -388,7 +388,7 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	/* Find the size for the DIB window */
 	/* Initialise the MGL for windowed operation */
 	FakeMGL_DIB_setAppInstance(hInstance);
-	FakeMGL_DIB_registerDriver(MGL_PACKED8NAME, PACKED8_driver);
+	FakeMGL_DIB_registerDriver();
 	FakeMGL_DIB_initWindowed();
 
 	modelist[0].type = MS_WINDOWED;
@@ -1381,7 +1381,7 @@ void FlipScreen(vrect_t *rects)
 				FakeMGL_DIB_bitBltCoord(windc,
 					rects->x, rects->y,
 					rects->x + rects->width, rects->y + rects->height,
-					rects->x, rects->y, MGL_REPLACE_MODE);
+					rects->x, rects->y);
 				rects = rects->pnext;
 			}
 		}
