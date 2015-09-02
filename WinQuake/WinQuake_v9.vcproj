@@ -4144,46 +4144,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="surf16.s"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="mycoolbuild"
-						CommandLine="cl /EP &gt; &quot;$(INTDIR)\$(InputName).spp&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;&quot;$(OUTDIR)\gas2masm&quot; &lt; &quot;$(INTDIR)\$(InputName).spp&quot; &gt; &quot;$(INTDIR)\$(InputName).asm&quot;&#x0D;&#x0A;ml /c /Cp /coff /Fo&quot;$(INTDIR)\$(InputName).obj&quot; /Zm /Zi &quot;$(INTDIR)\$(InputName).asm&quot;&#x0D;&#x0A;del &quot;$(INTDIR)\$(InputName).spp&quot;&#x0D;&#x0A;"
-						Outputs="$(INTDIR)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="GL Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="mycoolbuild"
-						CommandLine="cl /EP &gt; &quot;$(INTDIR)\$(InputName).spp&quot; &quot;$(InputPath)&quot;&#x0D;&#x0A;&quot;$(OUTDIR)\gas2masm&quot; &lt; &quot;$(INTDIR)\$(InputName).spp&quot; &gt; &quot;$(INTDIR)\$(InputName).asm&quot;&#x0D;&#x0A;ml /c /Cp /coff /Fo&quot;$(INTDIR)\$(InputName).obj&quot; /Zm /Zi &quot;$(INTDIR)\$(InputName).asm&quot;&#x0D;&#x0A;del &quot;$(INTDIR)\$(InputName).spp&quot;&#x0D;&#x0A;"
-						Outputs="$(INTDIR)\$(InputName).obj"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="GL Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="surf8.s"
 				>
 				<FileConfiguration

@@ -33,7 +33,6 @@ qboolean	r_drawpolys;
 qboolean	r_drawculledpolys;
 qboolean	r_worldpolysbacktofront;
 qboolean	r_recursiveaffinetriangles = true;
-int			r_pixbytes = 1;
 float		r_aliasuvscale = 1.0;
 int			r_outofsurfaces;
 int			r_outofedges;
@@ -463,20 +462,10 @@ void R_ViewChanged (vrect_t *pvrect, int lineadj, float aspect)
 
 // TODO: collect 386-specific code in one place
 #if	id386
-	if (r_pixbytes == 1)
-	{
-		Sys_MakeCodeWriteable ((long)R_Surf8Start,
-						     (long)R_Surf8End - (long)R_Surf8Start);
-		colormap = vid.colormap;
-		R_Surf8Patch ();
-	}
-	else
-	{
-		Sys_MakeCodeWriteable ((long)R_Surf16Start,
-						     (long)R_Surf16End - (long)R_Surf16Start);
-		colormap = vid.colormap16;
-		R_Surf16Patch ();
-	}
+	Sys_MakeCodeWriteable ((long)R_Surf8Start,
+					     (long)R_Surf8End - (long)R_Surf8Start);
+	colormap = vid.colormap;
+	R_Surf8Patch ();
 #endif	// id386
 
 	D_ViewChanged ();
