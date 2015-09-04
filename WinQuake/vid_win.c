@@ -338,8 +338,6 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 			}
 		}
 
-		vid_default = MODE_FULLSCREEN_DEFAULT;
-
 		temp = m[0];
 
 		if (!FakeMGL_FULL_init(&driver, &temp))
@@ -1293,6 +1291,8 @@ void	VID_Init (unsigned char *palette)
 		startwindowed = 1;
 		vid_default = windowed_default;
 	}
+	else
+		vid_default = MODE_FULLSCREEN_DEFAULT;
 
 	if (hwnd_dialog)
 		DestroyWindow (hwnd_dialog);
