@@ -35,7 +35,6 @@ HWND		mainwindow;
 HWND WINAPI InitializeWindow (HINSTANCE hInstance, int nCmdShow);
 
 int			DIBWidth, DIBHeight;
-qboolean	DDActive;
 RECT		WindowRect;
 DWORD		WindowStyle;
 
@@ -423,8 +422,6 @@ void VID_InitMGLDIB (HINSTANCE hInstance)
 	vid_default = windowed_default;
 
 	nummodes = 3;	// reserve space for windowed mode
-
-	DDActive = 0;
 }
 
 
@@ -579,7 +576,6 @@ qboolean VID_SetWindowedMode (int modenum)
 		windowed_mode_set;
 	}
 
-	DDActive = 0;
 	lastmodestate = modestate;
 
 	DestroyMGLDC ();
@@ -655,9 +651,6 @@ qboolean VID_SetWindowedMode (int modenum)
 
 qboolean VID_SetFullscreenMode (int modenum)
 {
-
-	DDActive = 1;
-
 	DestroyMGLDC ();
 
 	mode = modelist[modenum].modenum;
@@ -1358,7 +1351,7 @@ void FlipScreen(vrect_t *rects)
 {
 	// Flip the surfaces
 
-	if (DDActive)
+	if (modestate == MS_FULLSCREEN)
 	{
 		if (mgldc)
 		{
@@ -1366,7 +1359,7 @@ void FlipScreen(vrect_t *rects)
 			FakeMGL_FULL_flipScreen(mgldc, waitVRT);
 		}
 	}
-	else
+	else if (modestate == MS_WINDOWED)
 	{
 		HDC hdcScreen;
 

@@ -37,7 +37,6 @@ extern	int			global_nCmdShow;
 
 #ifndef SERVERONLY
 
-extern qboolean			DDActive;
 extern LPDIRECTSOUND pDS;
 extern LPDIRECTSOUNDBUFFER pDSBuf;
 
