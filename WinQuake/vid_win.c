@@ -92,8 +92,7 @@ static int		VID_highhunkmark;
 unsigned char	vid_curpal[256*3];
 unsigned char	vid_fakepal[256*4];
 
-int     driver = grDETECT,mode;
-//FakeMGLDC_DIB	*windc = NULL;
+int     driver,mode;
 FakeMGLDC_FULL	*mgldc = NULL;
 
 IDirectDraw7 *lpDirectDraw;
@@ -257,9 +256,10 @@ void initFatalError(void)
 	exit(EXIT_FAILURE);
 }
 
-
-int VID_Suspend (m_int flags)
+int VID_Suspend (int flags)
 {
+#if 0
+// todo: fix me
 	if (flags & MGL_DEACTIVATE)
 	{
 		block_drawing = true;	// so we don't try to draw while switched away
@@ -270,14 +270,15 @@ int VID_Suspend (m_int flags)
 	}
 	
 	return MGL_NO_SUSPEND_APP;
+#endif
+	return 0;
 }
-
 
 
 void VID_InitMGLFull (HINSTANCE hInstance)
 {
 	int			i, xRes, yRes, bits, lowres, curmode, temp;
-    uchar		*m;
+    unsigned char		*m;
 
 	// Initialise the MGL
 	FakeMGL_FULL_registerDriver();
@@ -387,8 +388,6 @@ FakeMGLDC_FULL *createDisplayDC()
 
 void VID_InitMGLDIB (HINSTANCE hInstance)
 {
-	/* Find the size for the DIB window */
-	/* Initialise the MGL for windowed operation */
 	FakeMGL_DIB_setAppInstance(hInstance);
 	FakeMGL_DIB_registerDriver();
 	FakeMGL_DIB_initWindowed();
