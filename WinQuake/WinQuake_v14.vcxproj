@@ -944,7 +944,7 @@ del "$(IntDir)%(Filename).spp"
     <Image Include="quake.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\gas2masm\gas2masm_v12.vcxproj">
+    <ProjectReference Include="..\gas2masm\gas2masm_v14.vcxproj">
       <Project>{d0ee6ff4-946e-44d3-828d-8d1bf23e8a0d}</Project>
     </ProjectReference>
   </ItemGroup>
