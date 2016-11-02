@@ -48,6 +48,7 @@ static int		lockcount;
 static qboolean	force_minimized, in_mode_set, force_mode_set;
 static int		windowed_mouse;
 static qboolean	palette_changed, hide_window;
+HICON			g_hIcon;
 
 viddef_t	vid;				// global video state
 
@@ -1578,8 +1579,6 @@ MAIN WINDOW
 ===================================================================
 */
 
-LONG CDAudio_MessageHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 /* main window procedure */
 LONG WINAPI MainWndProc (
     HWND    hWnd,
@@ -1775,10 +1774,6 @@ LONG WINAPI MainWndProc (
 					Sys_Quit ();
 				}
 			}
-			break;
-
-		case MM_MCINOTIFY:
-            lRet = CDAudio_MessageHandler (hWnd, uMsg, wParam, lParam);
 			break;
 
 		default:
