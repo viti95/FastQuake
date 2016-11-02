@@ -209,18 +209,8 @@ void Draw_Pixel(int x, int y, byte color)
 	byte			*dest;
 	unsigned short	*pusdest;
 
-	if (r_pixbytes == 1)
-	{
-		dest = vid.conbuffer + y*vid.conrowbytes + x;
-		*dest = color;
-	}
-	else
-	{
-	// FIXME: pre-expand to native format?
-		pusdest = (unsigned short *)
-		((byte *)vid.conbuffer + y*vid.conrowbytes + (x<<1));
-		*pusdest = d_8to16table[color];
-	}
+	dest = vid.conbuffer + y*vid.conrowbytes + x;
+	*dest = color;
 }
 
 
