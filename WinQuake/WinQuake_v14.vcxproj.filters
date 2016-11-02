@@ -282,7 +282,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="progdefs.q1" />
-    <None Include="progdefs.q2" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="winquake.rc">
@@ -508,9 +507,6 @@
       <Filter>Source Files</Filter>
     </CustomBuild>
     <CustomBuild Include="snd_mixa.s">
-      <Filter>Source Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="surf16.s">
       <Filter>Source Files</Filter>
     </CustomBuild>
     <CustomBuild Include="surf8.s">
