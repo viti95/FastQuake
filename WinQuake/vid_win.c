@@ -1302,7 +1302,11 @@ void FlipScreen (vrect_t *rects)
 		DDSURFACEDESC2 ddsd;
 		memset(&ddsd, 0, sizeof(ddsd));
 		ddsd.dwSize = sizeof(ddsd);
+		
 		hr = IDirectDrawSurface7_Lock(lpddsBackBuffer, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
+
+		if (hr != S_OK)
+			return;
 
 		while (rects)
 		{
