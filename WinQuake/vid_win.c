@@ -1284,56 +1284,64 @@ FlipScreen
 */
 void FlipScreen (vrect_t *rects)
 {
-	// Flip the surfaces
+	RECT r;
+	HRESULT hr;
 
-	if (modestate == MS_FULLSCREEN)
-	{
-		if (mgldc)
-		{
-			// We have a flipping surface, so do a hard page flip
-			FakeMGL_FULL_flipScreen(mgldc, waitVRT);
-		}
-	}
-	else if (modestate == MS_WINDOWED)
-	{
-		RECT r;
-		HRESULT hr;
-
-		DDSURFACEDESC2 ddsd;
-		memset(&ddsd, 0, sizeof(ddsd));
-		ddsd.dwSize = sizeof(ddsd);
+	DDSURFACEDESC2 ddsd;
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
 		
+	hr = IDirectDrawSurface7_Lock(lpddsBackBuffer, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
+	if (hr == DDERR_SURFACELOST)
+	{
+		if (modestate == MS_FULLSCREEN)
+			IDirectDrawSurface7_Restore(lpddsFrontBuffer);
+		else if (modestate == MS_WINDOWED)
+			IDirectDrawSurface7_Restore(lpddsBackBuffer);
+
 		hr = IDirectDrawSurface7_Lock(lpddsBackBuffer, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
+	}
 
-		if (hr != S_OK)
-			return;
+	if (hr != S_OK)
+		return;
 
-		while (rects)
+	while (rects)
+	{
+		int x, y;
+		byte *srcscanline = lpOffScreenBuffer + rects->y * vid.width;
+		byte *dstscanline = (byte*)ddsd.lpSurface + rects->y * ddsd.lPitch;
+
+		int xlimit = rects->x + rects->width;
+		for (y = 0; y < rects->height; y++)
 		{
-			int x, y;
-			byte *srcscanline = lpOffScreenBuffer + rects->y * vid.width;
-			byte *dstscanline = (byte*)ddsd.lpSurface + rects->y * ddsd.lPitch;
-
-			int xlimit = rects->x + rects->width;
-			for (y = 0; y < rects->height; y++)
+			for (x = rects->x; x < xlimit; x++)
 			{
-				for (x = rects->x; x < xlimit; x++)
-				{
-					byte col = srcscanline[x];
-					((unsigned*)dstscanline)[x] = ((unsigned*)vid_fakepal)[col];
-				}
-				srcscanline += vid.width;
-				dstscanline += ddsd.lPitch;
+				byte col = srcscanline[x];
+				((unsigned*)dstscanline)[x] = ((unsigned*)vid_fakepal)[col];
 			}
-
-			rects = rects->pnext;
+			srcscanline += vid.width;
+			dstscanline += ddsd.lPitch;
 		}
 
-		hr = IDirectDrawSurface7_Unlock(lpddsBackBuffer, NULL);
+		rects = rects->pnext;
+	}
 
+	hr = IDirectDrawSurface7_Unlock(lpddsBackBuffer, NULL);
+
+	if (modestate == MS_WINDOWED)
+	{
 		GetClientRect(mainwindow, &r);
 		MapWindowPoints(mainwindow, HWND_DESKTOP, (POINT*)&r, 2);
 		hr = IDirectDrawSurface7_Blt(lpddsFrontBuffer, &r, lpddsBackBuffer, NULL, 0, NULL);
+		if (hr == DDERR_SURFACELOST)
+		{
+			IDirectDrawSurface7_Restore(lpddsFrontBuffer);
+			hr = IDirectDrawSurface7_Blt(lpddsFrontBuffer, &r, lpddsBackBuffer, NULL, 0, NULL);
+		}
+	}
+	else if (modestate == MS_FULLSCREEN)
+	{
+		hr = IDirectDrawSurface7_Flip(lpddsFrontBuffer, NULL, 0);
 	}
 }
 
