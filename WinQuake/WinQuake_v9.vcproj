@@ -1753,26 +1753,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\fake_mgl.c"
-				>
-				<FileConfiguration
-					Name="GL Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="GL Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="gl_draw.c"
 				>
 				<FileConfiguration
@@ -4782,10 +4762,6 @@
 			</File>
 			<File
 				RelativePath="draw.h"
-				>
-			</File>
-			<File
-				RelativePath=".\fake_mgl.h"
 				>
 			</File>
 			<File

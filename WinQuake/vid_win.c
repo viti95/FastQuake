@@ -23,7 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "winquake.h"
 #include "d_local.h"
 #include "resource.h"
-#include "fake_mgl.h"
 
 #define MAX_MODE_LIST	30
 #define VID_ROW_SIZE	3
@@ -94,7 +93,6 @@ unsigned char	vid_curpal[256*3];
 unsigned char	vid_fakepal[256*4];
 
 int     driver,mode;
-FakeMGLDC_FULL	*mgldc = NULL;
 
 IDirectDraw7 *lpDirectDraw;
 IDirectDrawSurface7 *lpddsFrontBuffer, *lpddsBackBuffer;
@@ -253,7 +251,6 @@ qboolean VID_AllocBuffers (int width, int height)
 
 void initFatalError(void)
 {
-	FakeMGL_fail();
 	exit(EXIT_FAILURE);
 }
 
@@ -276,8 +273,9 @@ int VID_Suspend (int flags)
 }
 
 
-void VID_InitMGLFull (HINSTANCE hInstance)
+void VID_InitFullScreenModes (HINSTANCE hInstance)
 {
+#if 0
 	int			i, xRes, yRes, bits, lowres, curmode, temp;
     unsigned char		*m;
 
@@ -353,46 +351,12 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 	}
 
 	FakeMGL_FULL_setSuspendAppCallback(VID_Suspend);
+#endif
 }
 
 
-FakeMGLDC_FULL *createDisplayDC()
-/****************************************************************************
-*
-* Function:     createDisplayDC
-* Returns:      Pointer to the MGL device context to use for the application
-*
-* Description:  Initialises the MGL and creates an appropriate display
-*               device context to be used by the GUI. This creates and
-*               apropriate device context depending on the system being
-*               compile for, and should be the only place where system
-*               specific code is required.
-*
-****************************************************************************/
+void VID_InitWindowedModes (HINSTANCE hInstance)
 {
-    FakeMGLDC_FULL			*dc;
-
-	// Start the specified video mode
-	if (!FakeMGL_FULL_changeDisplayMode(mode))
-        initFatalError();
-
-	if ((dc = FakeMGL_FULL_createFullscreenDC()) == NULL)
-		return NULL;
-
-	vid.numpages = 2;
-
-	waitVRT = true;
-
-	return dc;
-}
-
-
-void VID_InitMGLDIB (HINSTANCE hInstance)
-{
-	FakeMGL_DIB_setAppInstance(hInstance);
-	FakeMGL_DIB_registerDriver();
-	FakeMGL_DIB_initWindowed();
-
 	modelist[0].type = MS_WINDOWED;
 	modelist[0].width = 320;
 	modelist[0].height = 240;
@@ -448,7 +412,6 @@ VID_GetModePtr
 */
 vmode_t *VID_GetModePtr (int modenum)
 {
-
 	if ((modenum >= 0) && (modenum < nummodes))
 		return &modelist[modenum];
 	else
@@ -538,19 +501,18 @@ char *VID_GetExtModeDescription (int mode)
 	pv = VID_GetModePtr (mode);
 	if (modelist[mode].type == MS_FULLSCREEN)
 	{
-		sprintf(pinfo,"%s fullscreen %s",pv->modedesc,
-				FakeMGL_modeDriverName(pv->modenum));
+		sprintf(pinfo,"%s fullscreen ddraw",pv->modedesc);
 	}
 	else
 	{
-		sprintf(pinfo, "%s windowed", pv->modedesc);
+		sprintf(pinfo, "%s windowed ddraw", pv->modedesc);
 	}
 
 	return pinfo;
 }
 
 
-void DestroyMGLDC (void)
+void DestroyVideoMode (void)
 {
 	// todo: set display mode to get out of fullscreen?
 	if (lpddsFrontBuffer)
@@ -558,9 +520,8 @@ void DestroyMGLDC (void)
 		IDirectDrawSurface7_Release(lpddsFrontBuffer);
 		lpddsFrontBuffer = NULL;
 	}
-	if (lpddsBackBuffer)
+	if (modestate == MS_WINDOWED && lpddsBackBuffer)
 	{
-		// to do: do not release back buffer if it is a flipping surface
 		IDirectDrawSurface7_Release(lpddsBackBuffer);
 		lpddsBackBuffer = NULL;
 	}
@@ -591,7 +552,7 @@ qboolean VID_SetWindowedMode (int modenum)
 
 	lastmodestate = modestate;
 
-	DestroyMGLDC ();
+	DestroyVideoMode ();
 	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_NORMAL);
 
 	WindowRect.top = WindowRect.left = 0;
@@ -668,15 +629,14 @@ qboolean VID_SetWindowedMode (int modenum)
 
 qboolean VID_SetFullscreenMode (int modenum)
 {
-	DestroyMGLDC ();
+	DestroyVideoMode ();
 
 	mode = modelist[modenum].modenum;
 
-	if ((mgldc = createDisplayDC ()) == NULL)
-	{
-		return false;
-	}
+	// todo: Start the specified video mode here
 
+	vid.numpages = 2;
+	waitVRT = true;
 	modestate = MS_FULLSCREEN;
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
@@ -1165,7 +1125,7 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 		Sys_Error("Couldn't create DIB window");
 
 	// tell MGL to use this window for fullscreen modes
-	FakeMGL_DIB_registerFullScreenWindow(hwnd);
+	//FakeMGL_DIB_registerFullScreenWindow(hwnd);
 
 	return hwnd;
 }
@@ -1205,11 +1165,11 @@ void	VID_Init (unsigned char *palette)
 
 	hr = DirectDrawCreateEx(NULL, &lpDirectDraw, &IID_IDirectDraw7, NULL);
 
-	VID_InitMGLDIB (global_hInstance);
+	VID_InitWindowedModes (global_hInstance);
 
 	basenummodes = nummodes;
 
-	// VID_InitMGLFull (global_hInstance);
+	VID_InitFullScreenModes (global_hInstance);
 
 	vid.maxwarpwidth = WARP_WIDTH;
 	vid.maxwarpheight = WARP_HEIGHT;
@@ -1261,15 +1221,16 @@ void	VID_Shutdown (void)
 	if (vid_initialized)
 	{
 		AppActivate(false, false);
-		DestroyMGLDC ();
+		DestroyVideoMode ();
+
+		if (lpDirectDraw)
+			IDirectDraw7_Release(lpDirectDraw);
 
 		if (hwnd_dialog)
 			DestroyWindow (hwnd_dialog);
 
 		if (mainwindow)
 			DestroyWindow(mainwindow);
-
-		FakeMGL_exit();
 
 		vid_testingmode = 0;
 		vid_initialized = 0;
