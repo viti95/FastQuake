@@ -1310,9 +1310,10 @@ void FlipScreen (vrect_t *rects)
 			byte *srcscanline = lpOffScreenBuffer + rects->y * vid.width;
 			byte *dstscanline = (byte*)ddsd.lpSurface + rects->y * ddsd.lPitch;
 
+			int xlimit = rects->x + rects->width;
 			for (y = 0; y < rects->height; y++)
 			{
-				for (x = rects->x; x < rects->x + rects->width; x++)
+				for (x = rects->x; x < xlimit; x++)
 				{
 					byte col = srcscanline[x];
 					((unsigned*)dstscanline)[x] = ((unsigned*)vid_fakepal)[col];
