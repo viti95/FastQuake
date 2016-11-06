@@ -275,6 +275,39 @@ int VID_Suspend (int flags)
 
 void VID_InitFullScreenModes (HINSTANCE hInstance)
 {
+	modelist[nummodes].type = MS_FULLSCREEN;
+	modelist[nummodes].width = 320;
+	modelist[nummodes].height = 240;
+	strcpy (modelist[nummodes].modedesc, "320x240");
+	modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT;
+	modelist[nummodes].dib = 0;
+	modelist[nummodes].fullscreen = 1;
+	modelist[nummodes].halfscreen = 0;
+	modelist[nummodes].bpp = 8;
+	nummodes++;
+
+	modelist[nummodes].type = MS_FULLSCREEN;
+	modelist[nummodes].width = 640;
+	modelist[nummodes].height = 480;
+	strcpy (modelist[nummodes].modedesc, "640x480");
+	modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT;
+	modelist[nummodes].dib = 0;
+	modelist[nummodes].fullscreen = 1;
+	modelist[nummodes].halfscreen = 0;
+	modelist[nummodes].bpp = 8;
+	nummodes++;
+
+	modelist[nummodes].type = MS_FULLSCREEN;
+	modelist[nummodes].width = 800;
+	modelist[nummodes].height = 600;
+	strcpy (modelist[nummodes].modedesc, "800x600");
+	modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT;
+	modelist[nummodes].dib = 0;
+	modelist[nummodes].fullscreen = 1;
+	modelist[nummodes].halfscreen = 0;
+	modelist[nummodes].bpp = 8;
+	nummodes++;
+
 #if 0
 	int			i, xRes, yRes, bits, lowres, curmode, temp;
     unsigned char		*m;
@@ -285,7 +318,7 @@ void VID_InitFullScreenModes (HINSTANCE hInstance)
 	m = FakeMGL_FULL_availableModes();
 
 	if (m[0] != 0xFF)
-	{
+	{ 
 		lowres = 99999;
 		curmode = 0;
 
@@ -514,22 +547,26 @@ char *VID_GetExtModeDescription (int mode)
 
 void DestroyVideoMode (void)
 {
-	// todo: set display mode to get out of fullscreen?
-	if (lpddsFrontBuffer)
+	if (lpOffScreenBuffer)
 	{
-		IDirectDrawSurface7_Release(lpddsFrontBuffer);
-		lpddsFrontBuffer = NULL;
+		free(lpOffScreenBuffer);
+		lpOffScreenBuffer = NULL;
 	}
 	if (modestate == MS_WINDOWED && lpddsBackBuffer)
 	{
 		IDirectDrawSurface7_Release(lpddsBackBuffer);
 		lpddsBackBuffer = NULL;
 	}
-	if (lpOffScreenBuffer)
+	if (lpddsFrontBuffer)
 	{
-		free(lpOffScreenBuffer);
-		lpOffScreenBuffer = NULL;
+		IDirectDrawSurface7_Release(lpddsFrontBuffer);
+		lpddsFrontBuffer = NULL;
 	}
+	if (modestate == MS_FULLSCREEN)
+	{
+		IDirectDraw7_RestoreDisplayMode(lpDirectDraw);
+	}
+	modestate = MS_UNINIT;
 }
 
 qboolean VID_SetWindowedMode (int modenum)
@@ -629,12 +666,38 @@ qboolean VID_SetWindowedMode (int modenum)
 
 qboolean VID_SetFullscreenMode (int modenum)
 {
+	DDSURFACEDESC2	ddsd;
+	DDSCAPS2		caps;
+	HRESULT			hr;
+	int				w, h;
+
 	DestroyVideoMode ();
 
+	w = modelist[modenum].width;
+	h = modelist[modenum].height;
+
+	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_EXCLUSIVE|DDSCL_FULLSCREEN|DDSCL_ALLOWREBOOT);
+	hr = IDirectDraw7_SetDisplayMode(lpDirectDraw, w, h, 32, 0, 0);
+
+	SetWindowPos (
+		mainwindow,
+		HWND_TOP,
+		0, 0,
+		w, h,
+		SWP_SHOWWINDOW | SWP_NOCOPYBITS);
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_COMPLEX | DDSCAPS_FLIP;
+	ddsd.dwBackBufferCount = 1;
+	hr = IDirectDraw7_CreateSurface(lpDirectDraw, &ddsd, &lpddsFrontBuffer, NULL);
+
+	memset(&caps, 0, sizeof(caps));
+	caps.dwCaps = DDSCAPS_BACKBUFFER;
+	hr = IDirectDrawSurface7_GetAttachedSurface(lpddsFrontBuffer, &caps, &lpddsBackBuffer);
+
 	mode = modelist[modenum].modenum;
-
-	// todo: Start the specified video mode here
-
 	vid.numpages = 2;
 	waitVRT = true;
 	modestate = MS_FULLSCREEN;
@@ -646,6 +709,9 @@ qboolean VID_SetFullscreenMode (int modenum)
 	DIBWidth = vid.width = vid.conwidth = modelist[modenum].width;
 	vid.aspect = ((float)vid.height / (float)vid.width) *
 				(320.0 / 240.0);
+
+	lpOffScreenBuffer = malloc(DIBWidth * DIBHeight);
+	memset(lpOffScreenBuffer, 255, DIBWidth * DIBHeight);
 
 // needed because we're not getting WM_MOVE messages fullscreen on NT
 	window_x = 0;
