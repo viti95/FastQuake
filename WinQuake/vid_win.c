@@ -603,7 +603,6 @@ qboolean VID_SetWindowedMode (int modenum)
 	DIBWidth = modelist[modenum].width;
 	DIBHeight = modelist[modenum].height;
 
-	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFramed);
 	AdjustWindowRectEx(&WindowRect, WindowStyleFramed, FALSE, 0);
 
 	if (hide_window)
@@ -618,6 +617,8 @@ qboolean VID_SetWindowedMode (int modenum)
 				  WindowRect.right - WindowRect.left,
 				  WindowRect.bottom - WindowRect.top,
 				  SWP_SHOWWINDOW | SWP_DRAWFRAME | SWP_NOCOPYBITS);
+
+	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFramed);
 
 	if (force_minimized)
 		ShowWindow (mainwindow, SW_MINIMIZE);
@@ -676,14 +677,14 @@ qboolean VID_SetFullscreenMode (int modenum)
 	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_EXCLUSIVE|DDSCL_FULLSCREEN|DDSCL_ALLOWREBOOT);
 	hr = IDirectDraw7_SetDisplayMode(lpDirectDraw, w, h, 32, 0, 0);
 
-	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFullscreen);
-
 	SetWindowPos (
 		mainwindow,
 		HWND_TOP,
 		0, 0,
 		w, h,
 		SWP_SHOWWINDOW | SWP_NOCOPYBITS);
+
+	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFullscreen);
 
 	memset(&ddsd, 0, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
