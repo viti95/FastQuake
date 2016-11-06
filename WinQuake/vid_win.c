@@ -58,7 +58,7 @@ viddef_t	vid;				// global video state
 #define MODE_WINDOWED			0
 #define MODE_SETTABLE_WINDOW	2
 #define NO_MODE					(MODE_WINDOWED - 1)
-#define MODE_FULLSCREEN_DEFAULT	(MODE_WINDOWED + 3)
+#define MODE_FULLSCREEN_DEFAULT	(MODE_WINDOWED + 100)
 
 // Note that 0 is MODE_WINDOWED
 cvar_t		vid_mode = {"vid_mode","0", false};
@@ -279,38 +279,23 @@ int VID_Suspend (int flags)
 
 void VID_InitFullScreenModes (HINSTANCE hInstance)
 {
-	modelist[nummodes].type = MS_FULLSCREEN;
-	modelist[nummodes].width = 320;
-	modelist[nummodes].height = 240;
-	strcpy (modelist[nummodes].modedesc, "320x240");
-	modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT;
-	modelist[nummodes].dib = 0;
-	modelist[nummodes].fullscreen = 1;
-	modelist[nummodes].halfscreen = 0;
-	modelist[nummodes].bpp = 8;
-	nummodes++;
+	struct {int w; int h; } resolutions[] =
+	{{320, 240}, {400, 300}, {640, 480}, {800, 600}, {1024,768}};
 
-	modelist[nummodes].type = MS_FULLSCREEN;
-	modelist[nummodes].width = 640;
-	modelist[nummodes].height = 480;
-	strcpy (modelist[nummodes].modedesc, "640x480");
-	modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT;
-	modelist[nummodes].dib = 0;
-	modelist[nummodes].fullscreen = 1;
-	modelist[nummodes].halfscreen = 0;
-	modelist[nummodes].bpp = 8;
-	nummodes++;
-
-	modelist[nummodes].type = MS_FULLSCREEN;
-	modelist[nummodes].width = 800;
-	modelist[nummodes].height = 600;
-	strcpy (modelist[nummodes].modedesc, "800x600");
-	modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT;
-	modelist[nummodes].dib = 0;
-	modelist[nummodes].fullscreen = 1;
-	modelist[nummodes].halfscreen = 0;
-	modelist[nummodes].bpp = 8;
-	nummodes++;
+	int i;
+	for (i=0; i<ARRAYSIZE(resolutions); i++)
+	{
+		modelist[nummodes].type = MS_FULLSCREEN;
+		modelist[nummodes].width = resolutions[i].w;
+		modelist[nummodes].height = resolutions[i].h;
+		sprintf(modelist[nummodes].modedesc, "%dx%d", resolutions[i].w, resolutions[i].h);
+		modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT + i;
+		modelist[nummodes].dib = 0;
+		modelist[nummodes].fullscreen = 1;
+		modelist[nummodes].halfscreen = 0;
+		modelist[nummodes].bpp = 8;
+		nummodes++;
+	}
 
 #if 0
 	int			i, xRes, yRes, bits, lowres, curmode, temp;
@@ -394,40 +379,26 @@ void VID_InitFullScreenModes (HINSTANCE hInstance)
 
 void VID_InitWindowedModes (HINSTANCE hInstance)
 {
-	modelist[0].type = MS_WINDOWED;
-	modelist[0].width = 320;
-	modelist[0].height = 240;
-	strcpy (modelist[0].modedesc, "320x240");
-	modelist[0].modenum = MODE_WINDOWED;
-	modelist[0].dib = 1;
-	modelist[0].fullscreen = 0;
-	modelist[0].halfscreen = 0;
-	modelist[0].bpp = 8;
+	struct {int w; int h; } resolutions[] =
+	{{320, 240}, /*{400, 300},*/ {640, 480}, {800, 600}, /*{1024,768}*/};
 
-	modelist[1].type = MS_WINDOWED;
-	modelist[1].width = 640;
-	modelist[1].height = 480;
-	strcpy (modelist[1].modedesc, "640x480");
-	modelist[1].modenum = MODE_WINDOWED + 1;
-	modelist[1].dib = 1;
-	modelist[1].fullscreen = 0;
-	modelist[1].halfscreen = 0;
-	modelist[1].bpp = 8;
-
-	modelist[2].type = MS_WINDOWED;
-	modelist[2].width = 800;
-	modelist[2].height = 600;
-	strcpy (modelist[2].modedesc, "800x600");
-	modelist[2].modenum = MODE_WINDOWED + 2;
-	modelist[2].dib = 1;
-	modelist[2].fullscreen = 0;
-	modelist[2].halfscreen = 0;
-	modelist[2].bpp = 8;
+	int i;
+	for (i=0; i<ARRAYSIZE(resolutions); i++)
+	{
+		modelist[nummodes].type = MS_WINDOWED;
+		modelist[nummodes].width = resolutions[i].w;
+		modelist[nummodes].height = resolutions[i].h;
+		sprintf(modelist[nummodes].modedesc, "%dx%d", resolutions[i].w, resolutions[i].h);
+		modelist[nummodes].modenum = MODE_WINDOWED + i;
+		modelist[nummodes].dib = 0;
+		modelist[nummodes].fullscreen = 0;
+		modelist[nummodes].halfscreen = 0;
+		modelist[nummodes].bpp = 8;
+		nummodes++;
+	}
 
 	windowed_default = MODE_WINDOWED;
 	vid_default = windowed_default;
-
-	nummodes = 3;	// reserve space for windowed mode
 }
 
 
