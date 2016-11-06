@@ -1672,8 +1672,6 @@ void * Mod_LoadSpriteFrame (void * pin, mspriteframe_t **ppframe, int framenum)
 	dspriteframe_t		*pinframe;
 	mspriteframe_t		*pspriteframe;
 	int					i, width, height, size, origin[2];
-	unsigned short		*ppixout;
-	byte				*ppixin;
 	char				name[64];
 
 	pinframe = (dspriteframe_t *)pin;

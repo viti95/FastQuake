@@ -27,9 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef SERVERONLY
 #include <ddraw.h>
 #include <dsound.h>
-#ifndef GLQUAKE
-#include <mgraph.h>
-#endif
 #endif
 
 extern	HINSTANCE	global_hInstance;
@@ -37,7 +34,6 @@ extern	int			global_nCmdShow;
 
 #ifndef SERVERONLY
 
-extern qboolean			DDActive;
 extern LPDIRECTSOUND pDS;
 extern LPDIRECTSOUNDBUFFER pDSBuf;
 

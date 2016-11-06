@@ -23,7 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "winquake.h"
 #include "d_local.h"
 #include "resource.h"
-#include "fake_mgl.h"
 
 #define MAX_MODE_LIST	30
 #define VID_ROW_SIZE	3
@@ -35,9 +34,12 @@ HWND		mainwindow;
 HWND WINAPI InitializeWindow (HINSTANCE hInstance, int nCmdShow);
 
 int			DIBWidth, DIBHeight;
-qboolean	DDActive;
 RECT		WindowRect;
-DWORD		WindowStyle;
+DWORD		WindowStyleFramed = WS_OVERLAPPED | WS_BORDER | WS_CAPTION |
+								WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
+								WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+
+DWORD		WindowStyleFullscreen = WS_POPUP;
 
 int			window_center_x, window_center_y, window_x, window_y, window_width, window_height;
 RECT		window_rect;
@@ -48,7 +50,7 @@ static qboolean	vid_initialized = false, vid_palettized;
 static int		lockcount;
 static qboolean	force_minimized, in_mode_set, force_mode_set;
 static int		windowed_mouse;
-static qboolean	palette_changed, syscolchg, hide_window, pal_is_nostatic;
+static qboolean	palette_changed, hide_window;
 HICON			g_hIcon;
 
 viddef_t	vid;				// global video state
@@ -56,7 +58,7 @@ viddef_t	vid;				// global video state
 #define MODE_WINDOWED			0
 #define MODE_SETTABLE_WINDOW	2
 #define NO_MODE					(MODE_WINDOWED - 1)
-#define MODE_FULLSCREEN_DEFAULT	(MODE_WINDOWED + 3)
+#define MODE_FULLSCREEN_DEFAULT	(MODE_WINDOWED + 100)
 
 // Note that 0 is MODE_WINDOWED
 cvar_t		vid_mode = {"vid_mode","0", false};
@@ -92,12 +94,13 @@ static int		vid_surfcachesize;
 static int		VID_highhunkmark;
 
 unsigned char	vid_curpal[256*3];
+unsigned char	vid_fakepal[256*4];
 
-unsigned short	d_8to16table[256];
+int     driver,mode;
 
-int     driver = grDETECT,mode;
-FakeMGLDC_DIB	*windc = NULL;
-FakeMGLDC_FULL	*mgldc = NULL;
+IDirectDraw7 *lpDirectDraw;
+IDirectDrawSurface7 *lpddsFrontBuffer, *lpddsBackBuffer;
+byte *lpOffScreenBuffer;
 
 typedef struct {
 	modestate_t	type;
@@ -252,39 +255,59 @@ qboolean VID_AllocBuffers (int width, int height)
 
 void initFatalError(void)
 {
-	FakeMGL_fail();
 	exit(EXIT_FAILURE);
 }
 
-
-int VID_Suspend (m_int flags)
+int VID_Suspend (int flags)
 {
+#if 0
+// todo: fix me
 	if (flags & MGL_DEACTIVATE)
 	{
 		block_drawing = true;	// so we don't try to draw while switched away
 	}
-	else /* if (flags & MGL_REACTIVATE) */
+	else if (flags & MGL_REACTIVATE)
 	{
 		block_drawing = false;
 	}
 	
 	return MGL_NO_SUSPEND_APP;
+#endif
+	return 0;
 }
 
 
-
-void VID_InitMGLFull (HINSTANCE hInstance)
+void VID_InitFullScreenModes (HINSTANCE hInstance)
 {
+	struct {int w; int h; } resolutions[] =
+	{{320, 240}, {400, 300}, {640, 480}, {800, 600}, {1024,768}};
+
+	int i;
+	for (i=0; i<ARRAYSIZE(resolutions); i++)
+	{
+		modelist[nummodes].type = MS_FULLSCREEN;
+		modelist[nummodes].width = resolutions[i].w;
+		modelist[nummodes].height = resolutions[i].h;
+		sprintf(modelist[nummodes].modedesc, "%dx%d", resolutions[i].w, resolutions[i].h);
+		modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT + i;
+		modelist[nummodes].dib = 0;
+		modelist[nummodes].fullscreen = 1;
+		modelist[nummodes].halfscreen = 0;
+		modelist[nummodes].bpp = 8;
+		nummodes++;
+	}
+
+#if 0
 	int			i, xRes, yRes, bits, lowres, curmode, temp;
-    uchar		*m;
+    unsigned char		*m;
 
 	// Initialise the MGL
-	FakeMGL_FULL_registerDriver(MGL_DDRAW8NAME,DDRAW8_driver);
+	FakeMGL_FULL_registerDriver();
 	FakeMGL_FULL_detectGraph(&driver,&mode);
 	m = FakeMGL_FULL_availableModes();
 
 	if (m[0] != 0xFF)
-	{
+	{ 
 		lowres = 99999;
 		curmode = 0;
 
@@ -341,8 +364,6 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 			}
 		}
 
-		vid_default = MODE_FULLSCREEN_DEFAULT;
-
 		temp = m[0];
 
 		if (!FakeMGL_FULL_init(&driver, &temp))
@@ -352,84 +373,32 @@ void VID_InitMGLFull (HINSTANCE hInstance)
 	}
 
 	FakeMGL_FULL_setSuspendAppCallback(VID_Suspend);
+#endif
 }
 
 
-FakeMGLDC_FULL *createDisplayDC()
-/****************************************************************************
-*
-* Function:     createDisplayDC
-* Returns:      Pointer to the MGL device context to use for the application
-*
-* Description:  Initialises the MGL and creates an appropriate display
-*               device context to be used by the GUI. This creates and
-*               apropriate device context depending on the system being
-*               compile for, and should be the only place where system
-*               specific code is required.
-*
-****************************************************************************/
+void VID_InitWindowedModes (HINSTANCE hInstance)
 {
-    FakeMGLDC_FULL			*dc;
+	struct {int w; int h; } resolutions[] =
+	{{320, 240}, /*{400, 300},*/ {640, 480}, {800, 600}, /*{1024,768}*/};
 
-	// Start the specified video mode
-	if (!FakeMGL_FULL_changeDisplayMode(mode))
-        initFatalError();
-
-	if ((dc = FakeMGL_FULL_createFullscreenDC()) == NULL)
-		return NULL;
-
-	vid.numpages = 2;
-
-	waitVRT = true;
-
-	return dc;
-}
-
-
-void VID_InitMGLDIB (HINSTANCE hInstance)
-{
-	/* Find the size for the DIB window */
-	/* Initialise the MGL for windowed operation */
-	FakeMGL_DIB_setAppInstance(hInstance);
-	FakeMGL_DIB_registerDriver(MGL_PACKED8NAME, PACKED8_driver);
-	FakeMGL_DIB_initWindowed();
-
-	modelist[0].type = MS_WINDOWED;
-	modelist[0].width = 320;
-	modelist[0].height = 240;
-	strcpy (modelist[0].modedesc, "320x240");
-	modelist[0].modenum = MODE_WINDOWED;
-	modelist[0].dib = 1;
-	modelist[0].fullscreen = 0;
-	modelist[0].halfscreen = 0;
-	modelist[0].bpp = 8;
-
-	modelist[1].type = MS_WINDOWED;
-	modelist[1].width = 640;
-	modelist[1].height = 480;
-	strcpy (modelist[1].modedesc, "640x480");
-	modelist[1].modenum = MODE_WINDOWED + 1;
-	modelist[1].dib = 1;
-	modelist[1].fullscreen = 0;
-	modelist[1].halfscreen = 0;
-	modelist[1].bpp = 8;
-
-	modelist[2].type = MS_WINDOWED;
-	modelist[2].width = 800;
-	modelist[2].height = 600;
-	strcpy (modelist[2].modedesc, "800x600");
-	modelist[2].modenum = MODE_WINDOWED + 2;
-	modelist[2].dib = 1;
-	modelist[2].fullscreen = 0;
-	modelist[2].halfscreen = 0;
-	modelist[2].bpp = 8;
+	int i;
+	for (i=0; i<ARRAYSIZE(resolutions); i++)
+	{
+		modelist[nummodes].type = MS_WINDOWED;
+		modelist[nummodes].width = resolutions[i].w;
+		modelist[nummodes].height = resolutions[i].h;
+		sprintf(modelist[nummodes].modedesc, "%dx%d", resolutions[i].w, resolutions[i].h);
+		modelist[nummodes].modenum = MODE_WINDOWED + i;
+		modelist[nummodes].dib = 0;
+		modelist[nummodes].fullscreen = 0;
+		modelist[nummodes].halfscreen = 0;
+		modelist[nummodes].bpp = 8;
+		nummodes++;
+	}
 
 	windowed_default = MODE_WINDOWED;
 	vid_default = windowed_default;
-
-	nummodes = 3;	// reserve space for windowed mode
-
-	DDActive = 0;
 }
 
 
@@ -451,7 +420,6 @@ VID_GetModePtr
 */
 vmode_t *VID_GetModePtr (int modenum)
 {
-
 	if ((modenum >= 0) && (modenum < nummodes))
 		return &modelist[modenum];
 	else
@@ -541,36 +509,45 @@ char *VID_GetExtModeDescription (int mode)
 	pv = VID_GetModePtr (mode);
 	if (modelist[mode].type == MS_FULLSCREEN)
 	{
-		sprintf(pinfo,"%s fullscreen %s",pv->modedesc,
-				FakeMGL_modeDriverName(pv->modenum));
+		sprintf(pinfo,"%s fullscreen ddraw",pv->modedesc);
 	}
 	else
 	{
-		sprintf(pinfo, "%s windowed", pv->modedesc);
+		sprintf(pinfo, "%s windowed ddraw", pv->modedesc);
 	}
 
 	return pinfo;
 }
 
-
-void DestroyMGLDC (void)
+void DestroyVideoMode (void)
 {
-	if (mgldc)
+	if (lpOffScreenBuffer)
 	{
-		FakeMGL_FULL_destroyDC(mgldc);
-		mgldc = NULL;
+		free(lpOffScreenBuffer);
+		lpOffScreenBuffer = NULL;
 	}
-
-	if (windc)
+	if (modestate == MS_WINDOWED && lpddsBackBuffer)
 	{
-		FakeMGL_DIB_destroyDC(windc);
-		windc = NULL;
+		IDirectDrawSurface7_Release(lpddsBackBuffer);
+		lpddsBackBuffer = NULL;
 	}
+	if (lpddsFrontBuffer)
+	{
+		IDirectDrawSurface7_Release(lpddsFrontBuffer);
+		lpddsFrontBuffer = NULL;
+	}
+	if (modestate == MS_FULLSCREEN)
+	{
+		IDirectDraw7_RestoreDisplayMode(lpDirectDraw);
+	}
+	modestate = MS_UNINIT;
 }
 
 qboolean VID_SetWindowedMode (int modenum)
 {
-	HDC				hdc;
+	IDirectDrawClipper *lpddClipper;
+	DDSURFACEDESC2	ddsd;
+	HRESULT			hr;
 	int				lastmodestate;
 
 	if (!windowed_mode_set)
@@ -584,14 +561,10 @@ qboolean VID_SetWindowedMode (int modenum)
 		windowed_mode_set;
 	}
 
-	DDActive = 0;
 	lastmodestate = modestate;
 
-	DestroyMGLDC ();
-
-// KJB: Signal to the MGL that we are going back to windowed mode
-	if (!FakeMGL_DIB_changeDisplayMode(grWINDOWED))
-		initFatalError();
+	DestroyVideoMode ();
+	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_NORMAL);
 
 	WindowRect.top = WindowRect.left = 0;
 
@@ -601,48 +574,50 @@ qboolean VID_SetWindowedMode (int modenum)
 	DIBWidth = modelist[modenum].width;
 	DIBHeight = modelist[modenum].height;
 
-	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
-
-	if (!SetWindowPos (mainwindow,
-					   NULL,
-					   0, 0,
-					   WindowRect.right - WindowRect.left,
-					   WindowRect.bottom - WindowRect.top,
-					   SWP_NOCOPYBITS | SWP_NOZORDER |
-						SWP_HIDEWINDOW))
-	{
-		Sys_Error ("Couldn't resize DIB window");
-	}
+	AdjustWindowRectEx(&WindowRect, WindowStyleFramed, FALSE, 0);
 
 	if (hide_window)
 		return true;
 
 // position and show the DIB window
 	VID_CheckWindowXY ();
-	SetWindowPos (mainwindow, NULL, (int)vid_window_x.value,
-				  (int)vid_window_y.value, 0, 0,
-				  SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW | SWP_DRAWFRAME);
+	SetWindowPos (mainwindow,
+				  HWND_TOP,
+				  (int)vid_window_x.value,
+				  (int)vid_window_y.value,
+				  WindowRect.right - WindowRect.left,
+				  WindowRect.bottom - WindowRect.top,
+				  SWP_SHOWWINDOW | SWP_DRAWFRAME | SWP_NOCOPYBITS);
+
+	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFramed);
 
 	if (force_minimized)
 		ShowWindow (mainwindow, SW_MINIMIZE);
 	else
 		ShowWindow (mainwindow, SW_SHOWDEFAULT);
 
-	UpdateWindow (mainwindow);
-
 	modestate = MS_WINDOWED;
 
-// because we have set the background brush for the window to NULL
-// (to avoid flickering when re-sizing the window on the desktop),
-// we clear the window to black when created, otherwise it will be
-// empty while Quake starts up.
-	hdc = GetDC(mainwindow);
-	PatBlt(hdc,0,0,WindowRect.right,WindowRect.bottom,BLACKNESS);
-	ReleaseDC(mainwindow, hdc);
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+	hr = IDirectDraw7_CreateSurface(lpDirectDraw, &ddsd, &lpddsFrontBuffer, NULL);
 
-	/* Create the MGL window DC and the MGL memory DC */
-	if (!FakeMGL_DIB_createWindowedDC(mainwindow,DIBWidth,DIBHeight,&windc))
-		FakeMGL_fail();
+	hr = IDirectDraw7_CreateClipper(lpDirectDraw, 0, &lpddClipper, NULL);
+	hr = IDirectDrawClipper_SetHWnd(lpddClipper, 0, mainwindow);
+	hr = IDirectDrawSurface7_SetClipper(lpddsFrontBuffer, lpddClipper);
+	hr = IDirectDrawClipper_Release(lpddClipper);
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_WIDTH | DDSD_HEIGHT;
+	ddsd.dwWidth = DIBWidth;
+	ddsd.dwHeight = DIBHeight;
+	hr = IDirectDraw7_CreateSurface(lpDirectDraw, &ddsd, &lpddsBackBuffer, NULL);
+
+	lpOffScreenBuffer = malloc(DIBWidth * DIBHeight);
+	memset(lpOffScreenBuffer, 255, DIBWidth * DIBHeight);
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
 	vid.rowbytes = vid.conrowbytes = 0;
@@ -660,18 +635,42 @@ qboolean VID_SetWindowedMode (int modenum)
 
 qboolean VID_SetFullscreenMode (int modenum)
 {
+	DDSURFACEDESC2	ddsd;
+	DDSCAPS2		caps;
+	HRESULT			hr;
+	int				w, h;
 
-	DDActive = 1;
+	DestroyVideoMode ();
 
-	DestroyMGLDC ();
+	w = modelist[modenum].width;
+	h = modelist[modenum].height;
+
+	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_EXCLUSIVE|DDSCL_FULLSCREEN|DDSCL_ALLOWREBOOT);
+	hr = IDirectDraw7_SetDisplayMode(lpDirectDraw, w, h, 32, 0, 0);
+
+	SetWindowPos (
+		mainwindow,
+		HWND_TOP,
+		0, 0,
+		w, h,
+		SWP_SHOWWINDOW | SWP_NOCOPYBITS);
+
+	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFullscreen);
+
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_COMPLEX | DDSCAPS_FLIP;
+	ddsd.dwBackBufferCount = 1;
+	hr = IDirectDraw7_CreateSurface(lpDirectDraw, &ddsd, &lpddsFrontBuffer, NULL);
+
+	memset(&caps, 0, sizeof(caps));
+	caps.dwCaps = DDSCAPS_BACKBUFFER;
+	hr = IDirectDrawSurface7_GetAttachedSurface(lpddsFrontBuffer, &caps, &lpddsBackBuffer);
 
 	mode = modelist[modenum].modenum;
-
-	if ((mgldc = createDisplayDC ()) == NULL)
-	{
-		return false;
-	}
-
+	vid.numpages = 2;
+	waitVRT = true;
 	modestate = MS_FULLSCREEN;
 
 	vid.buffer = vid.conbuffer = vid.direct = NULL;
@@ -681,6 +680,9 @@ qboolean VID_SetFullscreenMode (int modenum)
 	DIBWidth = vid.width = vid.conwidth = modelist[modenum].width;
 	vid.aspect = ((float)vid.height / (float)vid.width) *
 				(320.0 / 240.0);
+
+	lpOffScreenBuffer = malloc(DIBWidth * DIBHeight);
+	memset(lpOffScreenBuffer, 255, DIBWidth * DIBHeight);
 
 // needed because we're not getting WM_MOVE messages fullscreen on NT
 	window_x = 0;
@@ -816,15 +818,6 @@ int VID_SetMode (int modenum, unsigned char *palette)
 
 	hdc = GetDC(NULL);
 
-	if (GetDeviceCaps(hdc, RASTERCAPS) & RC_PALETTE)
-		vid_palettized = true;
-	else
-		vid_palettized = false;
-
-	VID_SetPalette (palette);
-
-	ReleaseDC(NULL,hdc);
-
 	vid_modenum = modenum;
 	Cvar_SetValue ("vid_mode", (float)vid_modenum);
 
@@ -870,18 +863,16 @@ int VID_SetMode (int modenum, unsigned char *palette)
 
 void VID_LockBuffer (void)
 {
-	void *surface;
-	int bytesPerLine;
+	void *surface = lpOffScreenBuffer;
+	int bytesPerLine = vid.width;
 
 	lockcount++;
 
 	if (lockcount > 1)
 		return;
 
-	if (windc)
-		FakeMGL_DIB_lock(windc, &surface, &bytesPerLine);
-	else if (mgldc)
-		FakeMGL_FULL_lock(mgldc, &surface, &bytesPerLine);
+	// we are not really locking anything. actual locking is done in FlipScreen.
+	// just set the pointers to offscreen buffer.
 
 	// Update surface pointer for linear access modes
 	vid.buffer = vid.conbuffer = vid.direct = surface;
@@ -912,7 +903,7 @@ void VID_UnlockBuffer (void)
 	if (lockcount < 0)
 		Sys_Error ("Unbalanced unlock");
 
-	FakeMGL_unlock();
+	// we are not really unlocking anything. actual unlocking is done in FlipScreen.
 
 // to turn up any unlocked accesses
 	vid.buffer = vid.conbuffer = vid.direct = d_viewbuffer = NULL;
@@ -929,15 +920,8 @@ int VID_ForceUnlockedAndReturnState (void)
 
 	lk = lockcount;
 
-	if (windc)
-	{
-		lockcount = 0;
-	}
-	else
-	{
-		lockcount = 1;
-		VID_UnlockBuffer ();
-	}
+	lockcount = 1;
+	VID_UnlockBuffer ();
 
 	return lk;
 }
@@ -946,7 +930,7 @@ int VID_ForceUnlockedAndReturnState (void)
 void VID_ForceLockState (int lk)
 {
 
-	if (!windc && lk)
+	if (lk>0)
 	{
 		lockcount = 0;
 		VID_LockBuffer ();
@@ -958,55 +942,19 @@ void VID_ForceLockState (int lk)
 
 void	VID_SetPalette (unsigned char *palette)
 {
-	INT			i;
-	palette_t	pal[256];
-    HDC			hdc;
+	int i;
+	palette_changed = true;
 
-	if (!Minimized)
+	if (palette != vid_curpal)
 	{
-		palette_changed = true;
-
-	// make sure we have the static colors if we're the active app
-		hdc = GetDC(NULL);
-
-		if (vid_palettized && ActiveApp)
+		memcpy (vid_curpal, palette, sizeof(vid_curpal));
+		for (i=0; i<=255; i++)
 		{
-			if (GetSystemPaletteUse(hdc) == SYSPAL_STATIC)
-			{
-			// switch to SYSPAL_NOSTATIC and remap the colors
-				SetSystemPaletteUse(hdc, SYSPAL_NOSTATIC);
-				syscolchg = true;
-				pal_is_nostatic = true;
-			}
+			vid_fakepal[i*4 + 0] = vid_curpal[i*3 + 2];
+			vid_fakepal[i*4 + 1] = vid_curpal[i*3 + 1];
+			vid_fakepal[i*4 + 2] = vid_curpal[i*3 + 0];
+			vid_fakepal[i*4 + 3] = 0;
 		}
-
-		ReleaseDC(NULL,hdc);
-
-		// Translate the palette values to an MGL palette array and
-		// set the values.
-		for (i = 0; i < 256; i++)
-		{
-			pal[i].red = palette[i*3];
-			pal[i].green = palette[i*3+1];
-			pal[i].blue = palette[i*3+2];
-		}
-
-		if (mgldc)
-		{
-			FakeMGL_FULL_setPalette(mgldc, pal, 256, 0);
-		}
-		else if (windc)
-		{
-			FakeMGL_DIB_setPalette(windc, pal, 256, 0);
-		}
-	}
-
-	memcpy (vid_curpal, palette, sizeof(vid_curpal));
-
-	if (syscolchg)
-	{
-		PostMessage (HWND_BROADCAST, WM_SYSCOLORCHANGE, (WPARAM)0, (LPARAM)0);
-		syscolchg = false;
 	}
 }
 
@@ -1170,8 +1118,6 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 {
 	WNDCLASS		wc;
 	HWND			hwnd;
-
-	g_hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_ICON2));
 	
 	/* Register the frame class */
 	wc.style = 0;
@@ -1179,7 +1125,7 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
-	wc.hIcon         = g_hIcon;
+	wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON2));
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName = 0;
@@ -1188,22 +1134,18 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 	if (!RegisterClass(&wc))
 		Sys_Error("Couldn't register window class");
 
-	WindowStyle = WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU |
-	WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPSIBLINGS |
-	WS_CLIPCHILDREN;
-
 	WindowRect.top = WindowRect.left = 0;
 
 	WindowRect.right = modelist[MODE_WINDOWED].width;
 	WindowRect.bottom = modelist[MODE_WINDOWED].height;
 
-	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
+	AdjustWindowRectEx(&WindowRect, WindowStyleFramed, FALSE, 0);
 
 	// create the window we'll use for the rest of the session
 	hwnd = CreateWindow(
 		"WinQuake",
 		"WinQuake",
-		WindowStyle,
+		WindowStyleFramed,
 		0, 0,
 		WindowRect.right - WindowRect.left,
 		WindowRect.bottom - WindowRect.top,
@@ -1216,7 +1158,7 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 		Sys_Error("Couldn't create DIB window");
 
 	// tell MGL to use this window for fullscreen modes
-	FakeMGL_DIB_registerFullScreenWindow(hwnd);
+	//FakeMGL_DIB_registerFullScreenWindow(hwnd);
 
 	return hwnd;
 }
@@ -1227,6 +1169,7 @@ void	VID_Init (unsigned char *palette)
 	int		i, bestmatch, bestmatchmetric, t, dr, dg, db;
 	int		basenummodes;
 	byte	*ptmp;
+	HRESULT	hr;
 
 	Cvar_RegisterVariable (&vid_mode);
 	Cvar_RegisterVariable (&vid_wait);
@@ -1253,11 +1196,13 @@ void	VID_Init (unsigned char *palette)
 
 	mainwindow = InitializeWindow(global_hInstance, global_nCmdShow);
 
-	VID_InitMGLDIB (global_hInstance);
+	hr = DirectDrawCreateEx(NULL, &lpDirectDraw, &IID_IDirectDraw7, NULL);
+
+	VID_InitWindowedModes (global_hInstance);
 
 	basenummodes = nummodes;
 
-	VID_InitMGLFull (global_hInstance);
+	VID_InitFullScreenModes (global_hInstance);
 
 	vid.maxwarpwidth = WARP_WIDTH;
 	vid.maxwarpheight = WARP_HEIGHT;
@@ -1265,39 +1210,13 @@ void	VID_Init (unsigned char *palette)
 	vid.fullbright = 256 - LittleLong (*((int *)vid.colormap + 2048));
 	vid_testingmode = 0;
 
-// GDI doesn't let us remap palette index 0, so we'll remap color
-// mappings from that black to another one
-	bestmatchmetric = 256*256*3;
-
-	for (i=1 ; i<256 ; i++)
-	{
-		dr = palette[0] - palette[i*3];
-		dg = palette[1] - palette[i*3+1];
-		db = palette[2] - palette[i*3+2];
-
-		t = (dr * dr) + (dg * dg) + (db * db);
-
-		if (t < bestmatchmetric)
-		{
-			bestmatchmetric = t;
-			bestmatch = i;
-
-			if (t == 0)
-				break;
-		}
-	}
-
-	for (i=0, ptmp = vid.colormap ; i<(1<<(VID_CBITS+8)) ; i++, ptmp++)
-	{
-		if (*ptmp == 0)
-			*ptmp = bestmatch;
-	}
-
 	if (COM_CheckParm("-startwindowed"))
 	{
 		startwindowed = 1;
 		vid_default = windowed_default;
 	}
+	else
+		vid_default = MODE_FULLSCREEN_DEFAULT;
 
 	if (hwnd_dialog)
 		DestroyWindow (hwnd_dialog);
@@ -1334,19 +1253,17 @@ void	VID_Shutdown (void)
 {
 	if (vid_initialized)
 	{
-		PostMessage (HWND_BROADCAST, WM_PALETTECHANGED, (WPARAM)mainwindow, (LPARAM)0);
-		PostMessage (HWND_BROADCAST, WM_SYSCOLORCHANGE, (WPARAM)0, (LPARAM)0);
-
 		AppActivate(false, false);
-		DestroyMGLDC ();
+		DestroyVideoMode ();
+
+		if (lpDirectDraw)
+			IDirectDraw7_Release(lpDirectDraw);
 
 		if (hwnd_dialog)
 			DestroyWindow (hwnd_dialog);
 
 		if (mainwindow)
 			DestroyWindow(mainwindow);
-
-		FakeMGL_exit();
 
 		vid_testingmode = 0;
 		vid_initialized = 0;
@@ -1359,39 +1276,66 @@ void	VID_Shutdown (void)
 FlipScreen
 ================
 */
-void FlipScreen(vrect_t *rects)
+void FlipScreen (vrect_t *rects)
 {
-	// Flip the surfaces
+	RECT r;
+	HRESULT hr;
 
-	if (DDActive)
+	DDSURFACEDESC2 ddsd;
+	memset(&ddsd, 0, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+		
+	hr = IDirectDrawSurface7_Lock(lpddsBackBuffer, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
+	if (hr == DDERR_SURFACELOST)
 	{
-		if (mgldc)
+		if (modestate == MS_FULLSCREEN)
+			IDirectDrawSurface7_Restore(lpddsFrontBuffer);
+		else if (modestate == MS_WINDOWED)
+			IDirectDrawSurface7_Restore(lpddsBackBuffer);
+
+		hr = IDirectDrawSurface7_Lock(lpddsBackBuffer, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
+	}
+
+	if (hr != S_OK)
+		return;
+
+	while (rects)
+	{
+		int x, y;
+		byte *srcscanline = lpOffScreenBuffer + rects->y * vid.width;
+		byte *dstscanline = (byte*)ddsd.lpSurface + rects->y * ddsd.lPitch;
+
+		int xlimit = rects->x + rects->width;
+		for (y = 0; y < rects->height; y++)
 		{
-			// We have a flipping surface, so do a hard page flip
-			FakeMGL_FULL_flipScreen(mgldc, waitVRT);
+			for (x = rects->x; x < xlimit; x++)
+			{
+				byte col = srcscanline[x];
+				((unsigned*)dstscanline)[x] = ((unsigned*)vid_fakepal)[col];
+			}
+			srcscanline += vid.width;
+			dstscanline += ddsd.lPitch;
+		}
+
+		rects = rects->pnext;
+	}
+
+	hr = IDirectDrawSurface7_Unlock(lpddsBackBuffer, NULL);
+
+	if (modestate == MS_WINDOWED)
+	{
+		GetClientRect(mainwindow, &r);
+		MapWindowPoints(mainwindow, HWND_DESKTOP, (POINT*)&r, 2);
+		hr = IDirectDrawSurface7_Blt(lpddsFrontBuffer, &r, lpddsBackBuffer, NULL, 0, NULL);
+		if (hr == DDERR_SURFACELOST)
+		{
+			IDirectDrawSurface7_Restore(lpddsFrontBuffer);
+			hr = IDirectDrawSurface7_Blt(lpddsFrontBuffer, &r, lpddsBackBuffer, NULL, 0, NULL);
 		}
 	}
-	else
+	else if (modestate == MS_FULLSCREEN)
 	{
-		HDC hdcScreen;
-
-		hdcScreen = GetDC(mainwindow);
-
-		if (windc)
-		{
-			FakeMGL_DIB_setWinDC(windc,hdcScreen);
-
-			while (rects)
-			{
-				FakeMGL_DIB_bitBltCoord(windc,
-					rects->x, rects->y,
-					rects->x + rects->width, rects->y + rects->height,
-					rects->x, rects->y, MGL_REPLACE_MODE);
-				rects = rects->pnext;
-			}
-		}
-
-		ReleaseDC(mainwindow, hdcScreen);
+		hr = IDirectDrawSurface7_Flip(lpddsFrontBuffer, NULL, 0);
 	}
 }
 
@@ -1401,7 +1345,7 @@ void	VID_Update (vrect_t *rects)
 	vrect_t	rect;
 	RECT	trect;
 
-	if (!vid_palettized && palette_changed)
+	if (palette_changed)
 	{
 		palette_changed = false;
 		rect.x = 0;
@@ -1572,56 +1516,9 @@ void AppActivate(BOOL fActive, BOOL minimize)
 *
 ****************************************************************************/
 {
-    HDC			hdc;
 	static BOOL	sound_active;
 
 	ActiveApp = fActive;
-
-// messy, but it seems to work
-
-	if (windc)
-		FakeMGL_DIB_appActivate(windc, ActiveApp);
-
-	if (vid_initialized)
-	{
-	// yield the palette if we're losing the focus
-		hdc = GetDC(NULL);
-
-		if (GetDeviceCaps(hdc, RASTERCAPS) & RC_PALETTE)
-		{
-			if (ActiveApp)
-			{
-				if (modestate == MS_WINDOWED)
-				{
-					if (GetSystemPaletteUse(hdc) == SYSPAL_STATIC)
-					{
-					// switch to SYSPAL_NOSTATIC and remap the colors
-						SetSystemPaletteUse(hdc, SYSPAL_NOSTATIC);
-						syscolchg = true;
-						pal_is_nostatic = true;
-					}
-				}
-			}
-			else if (pal_is_nostatic)
-			{
-				if (GetSystemPaletteUse(hdc) == SYSPAL_NOSTATIC)
-				{
-				// switch back to SYSPAL_STATIC and the old mapping
-					SetSystemPaletteUse(hdc, SYSPAL_STATIC);
-					syscolchg = true;
-				}
-
-				pal_is_nostatic = false;
-			}
-		}
-
-		if (!Minimized)
-			VID_SetPalette (vid_curpal);
-
-		scr_fullupdate = 0;
-
-		ReleaseDC(NULL,hdc);
-	}
 
 // enable/disable sound on focus gain/loss
 	if (!ActiveApp && sound_active)
@@ -1784,16 +1681,6 @@ LONG WINAPI MainWndProc (
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
 			ClearAllStates ();
 
-			if (!in_mode_set)
-			{
-				if (mgldc)
-					FakeMGL_FULL_activatePalette(mgldc,true);
-				else if (windc)
-						FakeMGL_DIB_activatePalette(windc,true);
-
-				VID_SetPalette(vid_curpal);
-			}
-
 			if (modestate == MS_FULLSCREEN)
 			{
 				if (!fActive)
@@ -1870,36 +1757,6 @@ LONG WINAPI MainWndProc (
 			} else {
 				Key_Event(K_MWHEELDOWN, true);
 				Key_Event(K_MWHEELDOWN, false);
-			}
-			break;
-		// KJB: Added these new palette functions
-		case WM_PALETTECHANGED:
-			if ((HWND)wParam == hWnd)
-				break;
-			/* Fall through to WM_QUERYNEWPALETTE */
-		case WM_QUERYNEWPALETTE:
-			hdc = GetDC(NULL);
-
-			if (GetDeviceCaps(hdc, RASTERCAPS) & RC_PALETTE)
-				vid_palettized = true;
-			else
-				vid_palettized = false;
-
-			ReleaseDC(NULL,hdc);
-
-			scr_fullupdate = 0;
-
-			if (vid_initialized && !in_mode_set && !Minimized)
-			{
-				if (mgldc && FakeMGL_FULL_activatePalette(mgldc,false) ||
-					windc && FakeMGL_DIB_activatePalette(windc,false))
-				{
-					VID_SetPalette (vid_curpal);
-					InvalidateRect (mainwindow, NULL, false);
-
-				// specifically required if WM_QUERYNEWPALETTE realizes a new palette
-					lRet = TRUE;
-				}
 			}
 			break;
 

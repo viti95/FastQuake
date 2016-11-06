@@ -66,7 +66,6 @@ const char *gl_renderer;
 const char *gl_version;
 const char *gl_extensions;
 
-qboolean		DDActive;
 qboolean		scr_skipupdate;
 
 static vmode_t	modelist[MAX_MODE_LIST];
@@ -109,7 +108,6 @@ HWND WINAPI InitializeWindow (HINSTANCE hInstance, int nCmdShow);
 
 viddef_t	vid;				// global video state
 
-unsigned short	d_8to16table[256];
 unsigned	d_8to24table[256];
 unsigned char d_15to8table[65536];
 
