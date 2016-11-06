@@ -35,7 +35,11 @@ HWND WINAPI InitializeWindow (HINSTANCE hInstance, int nCmdShow);
 
 int			DIBWidth, DIBHeight;
 RECT		WindowRect;
-DWORD		WindowStyle;
+DWORD		WindowStyleFramed = WS_OVERLAPPED | WS_BORDER | WS_CAPTION |
+								WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX |
+								WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+
+DWORD		WindowStyleFullscreen = WS_POPUP;
 
 int			window_center_x, window_center_y, window_x, window_y, window_width, window_height;
 RECT		window_rect;
@@ -544,7 +548,6 @@ char *VID_GetExtModeDescription (int mode)
 	return pinfo;
 }
 
-
 void DestroyVideoMode (void)
 {
 	if (lpOffScreenBuffer)
@@ -600,27 +603,21 @@ qboolean VID_SetWindowedMode (int modenum)
 	DIBWidth = modelist[modenum].width;
 	DIBHeight = modelist[modenum].height;
 
-	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
-
-	if (!SetWindowPos (mainwindow,
-					   NULL,
-					   0, 0,
-					   WindowRect.right - WindowRect.left,
-					   WindowRect.bottom - WindowRect.top,
-					   SWP_NOCOPYBITS | SWP_NOZORDER |
-						SWP_HIDEWINDOW))
-	{
-		Sys_Error ("Couldn't resize DIB window");
-	}
+	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFramed);
+	AdjustWindowRectEx(&WindowRect, WindowStyleFramed, FALSE, 0);
 
 	if (hide_window)
 		return true;
 
 // position and show the DIB window
 	VID_CheckWindowXY ();
-	SetWindowPos (mainwindow, NULL, (int)vid_window_x.value,
-				  (int)vid_window_y.value, 0, 0,
-				  SWP_NOSIZE | SWP_NOZORDER | SWP_SHOWWINDOW | SWP_DRAWFRAME);
+	SetWindowPos (mainwindow,
+				  HWND_TOP,
+				  (int)vid_window_x.value,
+				  (int)vid_window_y.value,
+				  WindowRect.right - WindowRect.left,
+				  WindowRect.bottom - WindowRect.top,
+				  SWP_SHOWWINDOW | SWP_DRAWFRAME | SWP_NOCOPYBITS);
 
 	if (force_minimized)
 		ShowWindow (mainwindow, SW_MINIMIZE);
@@ -678,6 +675,8 @@ qboolean VID_SetFullscreenMode (int modenum)
 
 	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_EXCLUSIVE|DDSCL_FULLSCREEN|DDSCL_ALLOWREBOOT);
 	hr = IDirectDraw7_SetDisplayMode(lpDirectDraw, w, h, 32, 0, 0);
+
+	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFullscreen);
 
 	SetWindowPos (
 		mainwindow,
@@ -1163,22 +1162,18 @@ HWND WINAPI InitializeWindow(HINSTANCE hInstance, int nCmdShow)
 	if (!RegisterClass(&wc))
 		Sys_Error("Couldn't register window class");
 
-	WindowStyle = WS_OVERLAPPED | WS_BORDER | WS_CAPTION | WS_SYSMENU |
-	WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPSIBLINGS |
-	WS_CLIPCHILDREN;
-
 	WindowRect.top = WindowRect.left = 0;
 
 	WindowRect.right = modelist[MODE_WINDOWED].width;
 	WindowRect.bottom = modelist[MODE_WINDOWED].height;
 
-	AdjustWindowRectEx(&WindowRect, WindowStyle, FALSE, 0);
+	AdjustWindowRectEx(&WindowRect, WindowStyleFramed, FALSE, 0);
 
 	// create the window we'll use for the rest of the session
 	hwnd = CreateWindow(
 		"WinQuake",
 		"WinQuake",
-		WindowStyle,
+		WindowStyleFramed,
 		0, 0,
 		WindowRect.right - WindowRect.left,
 		WindowRect.bottom - WindowRect.top,
