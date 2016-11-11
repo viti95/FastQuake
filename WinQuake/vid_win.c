@@ -1641,6 +1641,10 @@ LONG WINAPI MainWndProc (
 			break;
 
 		case WM_ACTIVATE:
+			fActive = LOWORD(wParam);
+			fMinimized = (BOOL) HIWORD(wParam);
+			AppActivate(!(fActive == WA_INACTIVE), fMinimized);
+
 			if (modestate == MS_FULLSCREEN)
 			{
 				if (!fActive)
@@ -1660,10 +1664,6 @@ LONG WINAPI MainWndProc (
 					in_mode_set = false;
 				}
 			}
-			fActive = LOWORD(wParam);
-			fMinimized = (BOOL) HIWORD(wParam);
-		
-			AppActivate(!(fActive == WA_INACTIVE), fMinimized);
 
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
 			ClearAllStates ();
