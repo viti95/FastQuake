@@ -457,12 +457,13 @@ static void Blit8bppToScreen(unsigned char *bmp, const RGBQUAD *pal, unsigned nu
 	HRESULT hr;
 	byte *scanline;
 	unsigned x, y;
+
+	if (IDirectDrawSurface7_IsLost(pDDSecondary))
+		hr = IDirectDrawSurface7_Restore(pDDSecondary);
 	
 	ZeroMemory(&ddsd, sizeof(ddsd));
 	ddsd.dwSize = sizeof(ddsd);
 	hr = IDirectDrawSurface7_Lock(pDDSecondary, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
-	if (hr == DDERR_SURFACELOST)
-		hr = IDirectDrawSurface7_Restore(pDDSecondary);
 
 	if (SUCCEEDED(hr))
 	{

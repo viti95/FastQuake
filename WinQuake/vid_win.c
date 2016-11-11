@@ -1255,11 +1255,7 @@ void FlipScreen (vrect_t *rects)
 	hr = IDirectDrawSurface7_Lock(lpddsBackBuffer, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
 	if (hr == DDERR_SURFACELOST)
 	{
-		if (modestate == MS_FULLSCREEN)
-			IDirectDrawSurface7_Restore(lpddsFrontBuffer);
-		else if (modestate == MS_WINDOWED)
-			IDirectDrawSurface7_Restore(lpddsBackBuffer);
-
+		IDirectDraw7_RestoreAllSurfaces(lpDirectDraw);
 		hr = IDirectDrawSurface7_Lock(lpddsBackBuffer, NULL, &ddsd, DDLOCK_WRITEONLY, NULL);
 	}
 
@@ -1296,13 +1292,18 @@ void FlipScreen (vrect_t *rects)
 		hr = IDirectDrawSurface7_Blt(lpddsFrontBuffer, &r, lpddsBackBuffer, NULL, 0, NULL);
 		if (hr == DDERR_SURFACELOST)
 		{
-			IDirectDrawSurface7_Restore(lpddsFrontBuffer);
+			IDirectDraw7_RestoreAllSurfaces(lpDirectDraw);
 			hr = IDirectDrawSurface7_Blt(lpddsFrontBuffer, &r, lpddsBackBuffer, NULL, 0, NULL);
 		}
 	}
 	else if (modestate == MS_FULLSCREEN)
 	{
 		hr = IDirectDrawSurface7_Flip(lpddsFrontBuffer, NULL, 0);
+		if (hr == DDERR_SURFACELOST)
+		{
+			IDirectDraw7_RestoreAllSurfaces(lpDirectDraw);
+			hr = IDirectDrawSurface7_Flip(lpddsFrontBuffer, NULL, 0);
+		}
 	}
 }
 
@@ -1640,6 +1641,25 @@ LONG WINAPI MainWndProc (
 			break;
 
 		case WM_ACTIVATE:
+			if (modestate == MS_FULLSCREEN)
+			{
+				if (!fActive)
+				{
+					IN_RestoreOriginalMouseState();
+					CDAudio_Pause();
+					in_mode_set = true;
+					ChangeDisplaySettings(NULL, 0);
+				}
+				else if (!fMinimized)
+				{
+					LockResource(NULL);
+					ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
+					IN_SetQuakeMouseState();
+					CDAudio_Resume();
+					vid.recalc_refdef = 1;
+					in_mode_set = false;
+				}
+			}
 			fActive = LOWORD(wParam);
 			fMinimized = (BOOL) HIWORD(wParam);
 		
@@ -1647,26 +1667,6 @@ LONG WINAPI MainWndProc (
 
 		// fix the leftover Alt from any Alt-Tab or the like that switched us away
 			ClearAllStates ();
-
-			if (modestate == MS_FULLSCREEN)
-			{
-				if (!fActive)
-				{
-					IN_RestoreOriginalMouseState ();
-					CDAudio_Pause ();
-					in_mode_set = true;
-					ChangeDisplaySettings(NULL, 0);
-				}
-				else if (!fMinimized)
-				{
-					ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
-					IN_SetQuakeMouseState ();
-					CDAudio_Resume ();
-					vid.recalc_refdef = 1;
-					in_mode_set = false;
-				}
-			}
-
 			break;
 
 		case WM_PAINT:
