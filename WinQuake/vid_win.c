@@ -280,6 +280,10 @@ int VID_Suspend (int flags)
 
 void VID_InitFullScreenModes (HINSTANCE hInstance)
 {
+	HMONITOR monitor;
+	MONITORINFO mi;
+	int resx, resy;
+
 	struct {int w; int h; } resolutions[] =
 	{{320, 240}, {400, 300}, {640, 480}, {800, 600}, {1024,768}};
 
@@ -297,6 +301,24 @@ void VID_InitFullScreenModes (HINSTANCE hInstance)
 		modelist[nummodes].bpp = 8;
 		nummodes++;
 	}
+
+	// Add current desktop resolution
+	monitor = MonitorFromWindow(NULL, MONITOR_DEFAULTTOPRIMARY);
+	mi.cbSize = sizeof(mi);
+	GetMonitorInfo(monitor, &mi);
+	resx = mi.rcMonitor.right - mi.rcMonitor.left;
+	resy = mi.rcMonitor.bottom - mi.rcMonitor.top;
+
+	modelist[nummodes].type = MS_FULLSCREEN;
+	modelist[nummodes].width = resx;
+	modelist[nummodes].height = resy;
+	sprintf(modelist[nummodes].modedesc, "%dx%d", resx, resy);
+	modelist[nummodes].modenum = MODE_FULLSCREEN_DEFAULT + i;
+	modelist[nummodes].dib = 0;
+	modelist[nummodes].fullscreen = 1;
+	modelist[nummodes].halfscreen = 0;
+	modelist[nummodes].bpp = 8;
+	nummodes++;
 
 #if 0
 	int			i, xRes, yRes, bits, lowres, curmode, temp;

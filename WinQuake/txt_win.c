@@ -188,6 +188,7 @@ static void ChooseTextFont(HWND hwnd)
 	monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
 
     // fall back to the normal font:
+	mi.cbSize = sizeof(mi);
 	if (GetMonitorInfoA(monitor, &mi) == FALSE)
     {
         font = &main_font;
