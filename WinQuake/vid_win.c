@@ -536,10 +536,7 @@ void DestroyVideoMode (void)
 		IDirectDrawSurface7_Release(lpddsFrontBuffer);
 		lpddsFrontBuffer = NULL;
 	}
-	if (modestate == MS_FULLSCREEN)
-	{
-		IDirectDraw7_RestoreDisplayMode(lpDirectDraw);
-	}
+	ChangeDisplaySettings(NULL, 0);
 	modestate = MS_UNINIT;
 }
 
@@ -1225,11 +1222,6 @@ void	VID_Init (unsigned char *palette)
 // so there's a window for DirectSound to work with but we're not yet
 // fullscreen so the "hardware already in use" dialog is visible if it
 // gets displayed
-
-// keep the window minimized until we're ready for the first real mode set
-	hide_window = true;
-	VID_SetMode (MODE_WINDOWED, palette);
-	hide_window = false;
 	S_Init ();
 
 	vid_initialized = true;
