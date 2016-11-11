@@ -48,10 +48,11 @@ static qboolean	startwindowed = 0, windowed_mode_set;
 static int		firstupdate = 1;
 static qboolean	vid_initialized = false, vid_palettized;
 static int		lockcount;
-static qboolean	force_minimized, in_mode_set, force_mode_set;
+static qboolean	in_mode_set, force_mode_set;
 static int		windowed_mouse;
-static qboolean	palette_changed, hide_window;
+static qboolean	palette_changed;
 HICON			g_hIcon;
+DEVMODE			devmode;
 
 viddef_t	vid;				// global video state
 
@@ -573,25 +574,19 @@ qboolean VID_SetWindowedMode (int modenum)
 
 	AdjustWindowRectEx(&WindowRect, WindowStyleFramed, FALSE, 0);
 
-	if (hide_window)
-		return true;
-
 // position and show the DIB window
 	VID_CheckWindowXY ();
 	SetWindowPos (mainwindow,
-				  HWND_TOP,
+				  NULL,
 				  (int)vid_window_x.value,
 				  (int)vid_window_y.value,
 				  WindowRect.right - WindowRect.left,
 				  WindowRect.bottom - WindowRect.top,
-				  SWP_SHOWWINDOW | SWP_DRAWFRAME | SWP_NOCOPYBITS);
+				  SWP_NOZORDER | SWP_DRAWFRAME | SWP_NOCOPYBITS);
 
 	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFramed);
 
-	if (force_minimized)
-		ShowWindow (mainwindow, SW_MINIMIZE);
-	else
-		ShowWindow (mainwindow, SW_SHOWDEFAULT);
+	ShowWindow (mainwindow, SW_SHOWDEFAULT);
 
 	modestate = MS_WINDOWED;
 
@@ -636,29 +631,28 @@ qboolean VID_SetFullscreenMode (int modenum)
 	DDSCAPS2		caps;
 	HRESULT			hr;
 	int				w, h;
-	DEVMODE			dm;
 
 	DestroyVideoMode ();
 
 	w = modelist[modenum].width;
 	h = modelist[modenum].height;
 
-	ZeroMemory(&dm, sizeof(dm));
-	dm.dmSize = sizeof(dm);
-	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-	dm.dmBitsPerPel = 32;
-	dm.dmPelsWidth = w;
-	dm.dmPelsHeight = h;
-	ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
+	ZeroMemory(&devmode, sizeof(devmode));
+	devmode.dmSize = sizeof(devmode);
+	devmode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+	devmode.dmBitsPerPel = 32;
+	devmode.dmPelsWidth = w;
+	devmode.dmPelsHeight = h;
+	ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
 
 	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_EXCLUSIVE|DDSCL_FULLSCREEN|DDSCL_ALLOWREBOOT);
 
 	SetWindowPos (
 		mainwindow,
-		HWND_TOP,
+		NULL,
 		0, 0,
 		w, h,
-		SWP_SHOWWINDOW | SWP_NOCOPYBITS);
+		SWP_NOZORDER | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
 
 	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFullscreen);
 
@@ -809,19 +803,7 @@ int VID_SetMode (int modenum, unsigned char *palette)
 		return false;
 	}
 
-	if (hide_window)
-		return true;
-
-// now we try to make sure we get the focus on the mode switch, because
-// sometimes in some systems we don't.  We grab the foreground, then
-// finish setting up, pump all our messages, and sleep for a little while
-// to let messages finish bouncing around the system, then we put
-// ourselves at the top of the z order, then grab the foreground again,
-// Who knows if it helps, but it probably doesn't hurt
-	if (!force_minimized)
-		SetForegroundWindow (mainwindow);
-
-	hdc = GetDC(NULL);
+	SetForegroundWindow (mainwindow);
 
 	vid_modenum = modenum;
 	Cvar_SetValue ("vid_mode", (float)vid_modenum);
@@ -835,22 +817,7 @@ int VID_SetMode (int modenum, unsigned char *palette)
 
 	D_InitCaches (vid_surfcache, vid_surfcachesize);
 
-	while (PeekMessage (&msg, NULL, 0, 0, PM_REMOVE))
-	{
-      	TranslateMessage (&msg);
-      	DispatchMessage (&msg);
-	}
-
-	Sleep (100);
-
-	if (!force_minimized)
-	{
-		SetWindowPos (mainwindow, HWND_TOP, 0, 0, 0, 0,
-				  SWP_DRAWFRAME | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW |
-				  SWP_NOCOPYBITS);
-
-		SetForegroundWindow (mainwindow);
-	}
+	SetWindowPos (mainwindow, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
 
 // fix the leftover Alt from any Alt-Tab or the like that switched us away
 	ClearAllStates ();
@@ -1688,9 +1655,11 @@ LONG WINAPI MainWndProc (
 					IN_RestoreOriginalMouseState ();
 					CDAudio_Pause ();
 					in_mode_set = true;
+					ChangeDisplaySettings(NULL, 0);
 				}
 				else if (!fMinimized)
 				{
+					ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
 					IN_SetQuakeMouseState ();
 					CDAudio_Resume ();
 					vid.recalc_refdef = 1;
