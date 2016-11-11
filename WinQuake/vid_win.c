@@ -46,7 +46,7 @@ RECT		window_rect;
 
 static qboolean	startwindowed = 0, windowed_mode_set;
 static int		firstupdate = 1;
-static qboolean	vid_initialized = false, vid_palettized;
+static qboolean	vid_initialized = false;
 static int		lockcount;
 static qboolean	in_mode_set, force_mode_set;
 static int		windowed_mouse;
