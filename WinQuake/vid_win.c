@@ -636,14 +636,22 @@ qboolean VID_SetFullscreenMode (int modenum)
 	DDSCAPS2		caps;
 	HRESULT			hr;
 	int				w, h;
+	DEVMODE			dm;
 
 	DestroyVideoMode ();
 
 	w = modelist[modenum].width;
 	h = modelist[modenum].height;
 
+	ZeroMemory(&dm, sizeof(dm));
+	dm.dmSize = sizeof(dm);
+	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+	dm.dmBitsPerPel = 32;
+	dm.dmPelsWidth = w;
+	dm.dmPelsHeight = h;
+	ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
+
 	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_EXCLUSIVE|DDSCL_FULLSCREEN|DDSCL_ALLOWREBOOT);
-	hr = IDirectDraw7_SetDisplayMode(lpDirectDraw, w, h, 32, 0, 0);
 
 	SetWindowPos (
 		mainwindow,
