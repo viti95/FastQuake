@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "winquake.h"
 #include "d_local.h"
 #include "resource.h"
+#include "mmintrin.h"
 
 #define MAX_MODE_LIST	30
 #define VID_ROW_SIZE	3
@@ -52,7 +53,8 @@ static qboolean	in_mode_set, force_mode_set;
 static int		windowed_mouse;
 static qboolean	palette_changed;
 HICON			g_hIcon;
-DEVMODE			devmode;
+static DEVMODE	devmode;
+static int		pixel_size;
 
 viddef_t	vid;				// global video state
 
@@ -593,6 +595,7 @@ qboolean VID_SetWindowedMode (int modenum)
 	
 	DIBWidth = modelist[modenum].width;
 	DIBHeight = modelist[modenum].height;
+	pixel_size = 1;
 
 	AdjustWindowRectEx(&WindowRect, WindowStyleFramed, FALSE, 0);
 
@@ -659,12 +662,17 @@ qboolean VID_SetFullscreenMode (int modenum)
 	w = modelist[modenum].width;
 	h = modelist[modenum].height;
 
+	if (w < 640)
+		pixel_size = 2;
+	else
+		pixel_size = 1;
+
 	ZeroMemory(&devmode, sizeof(devmode));
 	devmode.dmSize = sizeof(devmode);
 	devmode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 	devmode.dmBitsPerPel = 32;
-	devmode.dmPelsWidth = w;
-	devmode.dmPelsHeight = h;
+	devmode.dmPelsWidth = w * pixel_size;
+	devmode.dmPelsHeight = h * pixel_size;
 	ChangeDisplaySettings(&devmode, CDS_FULLSCREEN);
 
 	hr = IDirectDraw7_SetCooperativeLevel(lpDirectDraw, mainwindow, DDSCL_EXCLUSIVE|DDSCL_FULLSCREEN|DDSCL_ALLOWREBOOT);
@@ -673,7 +681,7 @@ qboolean VID_SetFullscreenMode (int modenum)
 		mainwindow,
 		NULL,
 		0, 0,
-		w, h,
+		w * pixel_size, h * pixel_size,
 		SWP_NOZORDER | SWP_SHOWWINDOW | SWP_NOCOPYBITS);
 
 	SetWindowLong(mainwindow, GWL_STYLE, WindowStyleFullscreen);
@@ -1291,15 +1299,38 @@ void FlipScreen (vrect_t *rects)
 		byte *dstscanline = (byte*)ddsd.lpSurface + rects->y * ddsd.lPitch;
 
 		int xlimit = rects->x + rects->width;
-		for (y = 0; y < rects->height; y++)
+
+		switch (pixel_size)
 		{
-			for (x = rects->x; x < xlimit; x++)
+		case 1:
+			for (y = 0; y < rects->height; y++)
 			{
-				byte col = srcscanline[x];
-				((unsigned*)dstscanline)[x] = ((unsigned*)vid_fakepal)[col];
+				for (x = rects->x; x < xlimit; x++)
+				{
+					byte col = srcscanline[x];
+ 					((unsigned*)dstscanline)[x] = ((unsigned*)vid_fakepal)[col];
+				}
+				srcscanline += vid.width;
+				dstscanline += ddsd.lPitch;
 			}
-			srcscanline += vid.width;
-			dstscanline += ddsd.lPitch;
+			break;
+		case 2:
+			_m_empty();
+			for (y = 0; y < rects->height; y++)
+			{
+				byte *dstscanline2 = dstscanline + ddsd.lPitch;
+				for (x = rects->x; x < xlimit; x++)
+				{
+					byte col = srcscanline[x];
+					__m64 rgbm = _mm_set1_pi32(((unsigned*)vid_fakepal)[col]);
+					((__m64*) dstscanline)[x] = rgbm;
+					((__m64*) dstscanline2)[x] = rgbm;
+				}
+				dstscanline += ddsd.lPitch * 2;
+				srcscanline += vid.width;
+			}
+			_m_empty();
+			break;
 		}
 
 		rects = rects->pnext;
