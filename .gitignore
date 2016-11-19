@@ -27,3 +27,4 @@ Release GL
 *.ipch
 *.opensdf
 *.opendb
+/.vs/WinQuake_v15/v15
