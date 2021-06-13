@@ -116,24 +116,7 @@ void R_AddDynamicLights (void)
 				else
 					dist = td + (sd>>1);
 				if (dist < minlight)
-#ifdef QUAKE2
-				{
-					unsigned temp;
-					temp = (rad - dist)*256;
-					i = t*smax + s;
-					if (!cl_dlights[lnum].dark)
-						blocklights[i] += temp;
-					else
-					{
-						if (blocklights[i] > temp)
-							blocklights[i] -= temp;
-						else
-							blocklights[i] = 0;
-					}
-				}
-#else
 					blocklights[t*smax + s] += (rad - dist)*256;
-#endif
 			}
 		}
 	}
@@ -281,9 +264,18 @@ void R_DrawSurface (void)
 
 //==============================
 
-	pblockdrawer = surfmiptable[r_drawsurf.surfmip];
+	if (r_pixbytes == 1)
+	{
+		pblockdrawer = surfmiptable[r_drawsurf.surfmip];
 	// TODO: only needs to be set when there is a display settings change
-	horzblockstep = blocksize;
+		horzblockstep = blocksize;
+	}
+	else
+	{
+		pblockdrawer = R_DrawSurfaceBlock16;
+	// TODO: only needs to be set when there is a display settings change
+		horzblockstep = blocksize << 1;
+	}
 
 	smax = mt->width >> r_drawsurf.surfmip;
 	twidth = texwidth;
@@ -606,23 +598,26 @@ void R_GenTurbTile (pixel_t *pbasetex, void *pdest)
 
 /*
 ================
-R_GenTile
+R_GenTurbTile16
 ================
 */
-void R_GenTile (msurface_t *psurf, void *pdest)
+void R_GenTurbTile16 (pixel_t *pbasetex, void *pdest)
 {
-	if (psurf->flags & SURF_DRAWTURB)
+	int				*turb;
+	int				i, j, s, t;
+	unsigned short	*pd;
+
+	turb = sintable + ((int)(cl.time*SPEED)&(CYCLE-1));
+	pd = (unsigned short *)pdest;
+
+	for (i=0 ; i<TILE_SIZE ; i++)
 	{
-		R_GenTurbTile ((pixel_t *)
-			((byte *)psurf->texinfo->texture + psurf->texinfo->texture->offsets[0]), pdest);
-	}
-	else if (psurf->flags & SURF_DRAWSKY)
-	{
-		R_GenSkyTile (pdest);
-	}
-	else
-	{
-		Sys_Error ("Unknown tile type");
+		for (j=0 ; j<TILE_SIZE ; j++)
+		{	
+			s = (((j << 16) + turb[i & (CYCLE-1)]) >> 16) & 63;
+			t = (((i << 16) + turb[j & (CYCLE-1)]) >> 16) & 63;
+			*pd++ = d_8to16table[*(pbasetex + (t<<6) + s)];
+		}
 	}
 }
 

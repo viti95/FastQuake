@@ -16,7 +16,7 @@
 ###########################################################################
 
 CC=gcc
-CFLAGS=-march=i586 -fno-strict-aliasing -Wall -Wno-trigraphs -Wno-unused-but-set-variable
+CFLAGS=-march=i486 -fno-strict-aliasing -Wall -Wno-trigraphs -Wno-unused-but-set-variable
 LDFLAGS=
 LIBS=-lm
 
@@ -27,7 +27,7 @@ else
 	LDFLAGS+=-s
 endif
 
-PRG=quake.exe
+PRG=486quake.exe
 
 all:    $(PRG)
 
@@ -174,5 +174,5 @@ $(PRG) : $(OBJS)
 
 clean:
 	if exist *.o del *.o
-	if exist quake.exe del quake.exe
+	if exist 486quake.exe.exe del 486quake.exe.exe
 

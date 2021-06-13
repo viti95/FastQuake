@@ -19,7 +19,7 @@
 *.ncb
 *.suo
 *.o
-/WinQuake/quake.exe
+/WinQuake/486quake.exe
 *.bak
 Debug GL
 Release GL

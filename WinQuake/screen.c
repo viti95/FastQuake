@@ -942,15 +942,6 @@ void SCR_UpdateScreen (void)
 
 	V_UpdatePalette ();
 
-#if defined(WIN32) && !defined(GLQUAKE)
-	// in fullscreen mode (with hardware flip) there's a problem with
-	// fake palette: status bar flashes when getting in/out of water.
-	// workaround: just copy the whole screen all the time.
-	// there is no significant impact on framerate.
-	if (vid.numpages > 1)
-		scr_copyeverything = 1;
-#endif
-
 //
 // update one of three areas
 //

@@ -1351,12 +1351,28 @@ void * Mod_LoadAliasSkin (void * pin, int *pskinindex, int skinsize,
 {
 	int		i;
 	byte	*pskin, *pinskin;
+	unsigned short	*pusskin;
 
-	pskin = Hunk_AllocName (skinsize, loadname);
+	pskin = Hunk_AllocName (skinsize * r_pixbytes, loadname);
 	pinskin = (byte *)pin;
 	*pskinindex = (byte *)pskin - (byte *)pheader;
 
-	Q_memcpy (pskin, pinskin, skinsize);
+	if (r_pixbytes == 1)
+	{
+		Q_memcpy (pskin, pinskin, skinsize);
+	}
+	else if (r_pixbytes == 2)
+	{
+		pusskin = (unsigned short *)pskin;
+
+		for (i=0 ; i<skinsize ; i++)
+			pusskin[i] = d_8to16table[pinskin[i]];
+	}
+	else
+	{
+		Sys_Error ("Mod_LoadAliasSkin: driver set invalid r_pixbytes: %d\n",
+				 r_pixbytes);
+	}
 
 	pinskin += skinsize;
 
@@ -1656,6 +1672,8 @@ void * Mod_LoadSpriteFrame (void * pin, mspriteframe_t **ppframe)
 	dspriteframe_t		*pinframe;
 	mspriteframe_t		*pspriteframe;
 	int					i, width, height, size, origin[2];
+	unsigned short		*ppixout;
+	byte				*ppixin;
 
 	pinframe = (dspriteframe_t *)pin;
 
@@ -1663,7 +1681,7 @@ void * Mod_LoadSpriteFrame (void * pin, mspriteframe_t **ppframe)
 	height = LittleLong (pinframe->height);
 	size = width * height;
 
-	pspriteframe = Hunk_AllocName (sizeof (mspriteframe_t) + size,
+	pspriteframe = Hunk_AllocName (sizeof (mspriteframe_t) + size*r_pixbytes,
 								   loadname);
 
 	Q_memset (pspriteframe, 0, sizeof (mspriteframe_t) + size);
@@ -1679,7 +1697,23 @@ void * Mod_LoadSpriteFrame (void * pin, mspriteframe_t **ppframe)
 	pspriteframe->left = origin[0];
 	pspriteframe->right = width + origin[0];
 
-	Q_memcpy (&pspriteframe->pixels[0], (byte *)(pinframe + 1), size);
+	if (r_pixbytes == 1)
+	{
+		Q_memcpy (&pspriteframe->pixels[0], (byte *)(pinframe + 1), size);
+	}
+	else if (r_pixbytes == 2)
+	{
+		ppixin = (byte *)(pinframe + 1);
+		ppixout = (unsigned short *)&pspriteframe->pixels[0];
+
+		for (i=0 ; i<size ; i++)
+			ppixout[i] = d_8to16table[ppixin[i]];
+	}
+	else
+	{
+		Sys_Error ("Mod_LoadSpriteFrame: driver set invalid r_pixbytes: %d\n",
+				 r_pixbytes);
+	}
 
 	return (void *)((byte *)pinframe + sizeof (dspriteframe_t) + size);
 }
