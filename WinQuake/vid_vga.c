@@ -462,8 +462,6 @@ VGA_SwapBuffers
 */
 void VGA_SwapBuffers (viddef_t *lvid, vrect_t *rects)
 {
-	UNUSED(lvid);
-
 	if (vid_wait.value == VID_WAIT_VSYNC)
 		VGA_WaitVsync ();
 
