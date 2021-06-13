@@ -116,8 +116,7 @@ qboolean	vsync_exists, de_exists;
 
 qboolean VID_ExtraGetModeInfo(int modenum);
 int VID_ExtraInitMode (viddef_t *vid, vmode_t *pcurrentmode);
-void VID_ExtraSwapBuffers (viddef_t *vid, vmode_t *pcurrentmode,
-	vrect_t *rects);
+void VID_ExtraSwapBuffers (viddef_t *vid, vrect_t *rects);
 
 
 /*
@@ -177,14 +176,10 @@ void VGA_BankedEndDirectRect (viddef_t *lvid, struct vmode_s *pcurrentmode,
 VID_SetVESAPalette
 ================
 */
-void VID_SetVESAPalette (viddef_t *lvid, vmode_t *pcurrentmode,
-	unsigned char *pal)
+void VID_SetVESAPalette (unsigned char *pal)
 {
 	int		i;
 	byte	*pp;
-
-	UNUSED(lvid);
-	UNUSED(pcurrentmode);
 
 	pp = ppal;
 
@@ -713,13 +708,9 @@ int VID_ExtraInitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 VID_ExtraSwapBuffers
 ================
 */
-void VID_ExtraSwapBuffers (viddef_t *lvid, vmode_t *pcurrentmode,
-	vrect_t *rects)
+void VID_ExtraSwapBuffers (viddef_t *lvid, vrect_t *rects)
 {
 	int	pageoffset;
-
-	UNUSED(rects);
-	UNUSED(pcurrentmode);
 
 	pageoffset = VID_pagelist[VID_currentpage];
 

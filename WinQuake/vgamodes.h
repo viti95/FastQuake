@@ -24,9 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "vregset.h"
 
 int		VGA_InitMode (viddef_t *vid, vmode_t *pcurrentmode);
-void	VGA_SwapBuffers (viddef_t *vid, vmode_t *pcurrentmode, vrect_t *rects);
-void	VGA_SetPalette (viddef_t *vid, vmode_t *pcurrentmode,
-						unsigned char *pal);
+void	VGA_SwapBuffers (viddef_t *vid, vrect_t *rects);
+void	VGA_SetPalette (unsigned char *pal);
 
 ///////////////////////////////////////////////////////////////////////////
 // the following base mode descriptors plus extra data together provide all

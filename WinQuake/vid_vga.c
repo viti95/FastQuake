@@ -408,13 +408,10 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *pcurrentmode)
 VGA_SetPalette
 ================
 */
-void VGA_SetPalette(viddef_t *lvid, vmode_t *pcurrentmode, unsigned char *pal)
+void VGA_SetPalette(unsigned char *pal)
 {
 	int shiftcomponents=2;
 	int i;
-
-	UNUSED(lvid);
-	UNUSED(pcurrentmode);
 
 	dos_outportb(0x3c8, 0);
 	for (i=0 ; i<768 ; i++)
@@ -427,11 +424,8 @@ void VGA_SetPalette(viddef_t *lvid, vmode_t *pcurrentmode, unsigned char *pal)
 VGA_SwapBuffersCopy
 ================
 */
-void VGA_SwapBuffersCopy (viddef_t *lvid, vmode_t *pcurrentmode,
-	vrect_t *rects)
+void VGA_SwapBuffersCopy (viddef_t *lvid, vrect_t *rects)
 {
-
-	UNUSED(pcurrentmode);
 
 // TODO: can write a dword at a time
 // TODO: put in ASM
@@ -466,13 +460,13 @@ void VGA_SwapBuffersCopy (viddef_t *lvid, vmode_t *pcurrentmode,
 VGA_SwapBuffers
 ================
 */
-void VGA_SwapBuffers (viddef_t *lvid, vmode_t *pcurrentmode, vrect_t *rects)
+void VGA_SwapBuffers (viddef_t *lvid, vrect_t *rects)
 {
 	UNUSED(lvid);
 
 	if (vid_wait.value == VID_WAIT_VSYNC)
 		VGA_WaitVsync ();
 
-	VGA_SwapBuffersCopy (lvid, pcurrentmode, rects);
+	VGA_SwapBuffersCopy (lvid, rects);
 }
 

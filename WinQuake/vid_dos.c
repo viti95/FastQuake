@@ -262,7 +262,7 @@ int VID_SetMode (int modenum, unsigned char *palette)
 		}
 	}
 
-	(*pcurrentmode->setpalette) (&vid, pcurrentmode, palette);
+	(*pcurrentmode->setpalette) (palette);
 
 	vid_modenum = modenum;
 	Cvar_SetValue ("vid_mode", (float)vid_modenum);
@@ -286,7 +286,7 @@ void    VID_SetPalette (unsigned char *palette)
 {
 	if (palette != vid_current_palette)
 		Q_memcpy(vid_current_palette, palette, 768);
-	(*pcurrentmode->setpalette)(&vid, pcurrentmode, vid_current_palette);
+	(*pcurrentmode->setpalette)(vid_current_palette);
 }
 
 
@@ -334,7 +334,7 @@ void    VID_Update (vrect_t *rects)
 		Cvar_SetValue ("vid_mode", _vid_default_mode.value);
 	}
 
-	(*pcurrentmode->swapbuffers)(&vid, pcurrentmode, rects);
+	(*pcurrentmode->swapbuffers)(&vid, rects);
 
 	if (!nomodecheck)
 	{

@@ -31,10 +31,8 @@ typedef struct vmode_s {
 	int			numpages;
 	void		*pextradata;
 	int			(*setmode)(viddef_t *vid, struct vmode_s *pcurrentmode);
-	void		(*swapbuffers)(viddef_t *vid, struct vmode_s *pcurrentmode,
-							   vrect_t *rects);
-	void		(*setpalette)(viddef_t *vid, struct vmode_s *pcurrentmode,
-							  unsigned char *palette);
+	void		(*swapbuffers)(viddef_t *vid, vrect_t *rects);
+	void		(*setpalette)(unsigned char *palette);
 	void		(*begindirectrect)(viddef_t *vid, struct vmode_s *pcurrentmode,
 								   int x, int y, byte *pbitmap, int width,
 								   int height);
@@ -68,9 +66,8 @@ void VID_InitVESA (void);
 void VID_InitExtra (void);
 void VGA_WaitVsync (void);
 void VGA_ClearVideoMem (int planar);
-void VGA_SetPalette(viddef_t *vid, vmode_t *pcurrentmode, unsigned char *pal);
-void VGA_SwapBuffersCopy (viddef_t *vid, vmode_t *pcurrentmode,
-	vrect_t *rects);
+void VGA_SetPalette(unsigned char *pal);
+void VGA_SwapBuffersCopy (viddef_t *vid, vrect_t *rects);
 qboolean VGA_FreeAndAllocVidbuffer (viddef_t *vid, int allocnewbuffer);
 qboolean VGA_CheckAdequateMem (int width, int height, int rowbytes,
 	int allocnewbuffer);
