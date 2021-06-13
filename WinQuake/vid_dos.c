@@ -289,19 +289,6 @@ void    VID_SetPalette (unsigned char *palette)
 	(*pcurrentmode->setpalette)(vid_current_palette);
 }
 
-
-/*
-================
-VID_ShiftPalette
-================
-*/
-void    VID_ShiftPalette (unsigned char *palette)
-{
-
-	VID_SetPalette (palette);
-}
-
-
 /*
 ================
 VID_Shutdown
