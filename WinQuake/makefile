@@ -40,14 +40,9 @@ all:    $(PRG)
 	@$(CC) $(CFLAGS) -x assembler-with-cpp -c $<
 
 NET= \
-	net_bw.o \
-	net_dgrm.o \
 	net_dos.o \
-	net_ipx.o \
 	net_loop.o \
 	net_main.o \
-	net_mp.o \
-	net_ser.o \
 	net_vcr.o
 
 RENDER= \
@@ -156,8 +151,6 @@ OBJS= \
 	mathlib.o \
 	menu.o \
 	model.o \
-	mplib.o \
-	mplpc.o \
 	sbar.o \
 	screen.o \
 	surf8.o \
