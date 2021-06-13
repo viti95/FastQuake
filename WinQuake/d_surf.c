@@ -204,7 +204,7 @@ surfcache_t     *D_SCAlloc (int width, int size)
 		d_roverwrapped = true;
 	}
 
-D_CheckCacheGuard ();   // DEBUG
+	//D_CheckCacheGuard ();   // DEBUG
 	return new;
 }
 
