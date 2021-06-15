@@ -16,18 +16,18 @@
 ###########################################################################
 
 CC=gcc
-CFLAGS=-march=i486 -fno-strict-aliasing -Wall -Wno-trigraphs -Wno-unused-but-set-variable
+CFLAGS=-march=i486 -fno-strict-aliasing -Wall -Wno-trigraphs -Wno-unused-but-set-variable -flto
 LDFLAGS=
 LIBS=-lm
 
 ifdef DEBUG
 	CFLAGS+=-O0 -gstabs+3 -fno-omit-frame-pointer -fno-fast-math
 else
-	CFLAGS+=-O3 -fomit-frame-pointer -ffast-math -DNDEBUG
+	CFLAGS+=-O3 -fomit-frame-pointer -ffast-math -DNDEBUG -flto
 	LDFLAGS+=-s
 endif
 
-PRG=486quake.exe
+PRG=fquake.exe
 
 all:    $(PRG)
 
@@ -167,5 +167,5 @@ $(PRG) : $(OBJS)
 
 clean:
 	if exist *.o del *.o
-	if exist 486quake.exe.exe del 486quake.exe.exe
+	if exist fquake.exe del fquake.exe
 
